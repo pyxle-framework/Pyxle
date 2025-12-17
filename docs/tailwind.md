@@ -1,88 +1,90 @@
 # Tailwind CSS Integration Guide
 
-Pyxle uses Vite under the hood, so adding Tailwind follows the same workflow as
-any React + Vite project. The steps below assume you already ran `pyxle init`
-and are inside the generated project directory.
+Every `pyxle init` project now ships with Tailwind and PostCSS preconfigured:
 
-## 1. Install the npm dependencies
+- `tailwind.config.cjs` watches both your source `.pyx` files (mixed Python + JSX) and the transpiled `.pyxle-build/client/pages/**/*.jsx` output so production builds never miss a class.
+- `postcss.config.cjs` registers the Tailwind + Autoprefixer plugins for Vite.
+- `pages/styles/tailwind.css` contains the `@tailwind` directives. Run `npm run dev:css` (or rely on `pyxle build`, which runs `npm run build` and thus `build:css`) to keep `/public/styles/tailwind.css` up to date; the scaffold links it directly from `pages/index.pyx`, so SSR responses never depend on JavaScript to load styles.
 
-```bash
-npm install -D tailwindcss postcss autoprefixer
-npx tailwindcss init -p
-```
+The steps below focus on customizing the defaults.
 
-The `-p` flag writes both `tailwind.config.js` and `postcss.config.cjs` so Vite
-knows how to process `@tailwind` directives.
+## 1. Extend the theme or content globs
 
-## 2. Point Tailwind at `.pyx` files
-
-Edit `tailwind.config.js` to include Pyxle's page formats:
+Update `tailwind.config.cjs` to match your project structure. The scaffold uses `module.exports` to stay compatible with Node's CommonJS loader even though `package.json` sets `"type": "module"`.
 
 ```js
 /** @type {import('tailwindcss').Config} */
-export default {
-  content: [
-    './pages/**/*.{pyx,jsx,js,ts,tsx}',
-    './.pyxle-build/client/pages/**/*.jsx',
-  ],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
+module.exports = {
+    content: [
+        './pages/**/*.{pyx,js,jsx,ts,tsx}',
+        './.pyxle-build/client/pages/**/*.{js,jsx,ts,tsx}',
+    ],
+    theme: {
+        extend: {
+            colors: {
+                brand: {
+                    DEFAULT: '#0f172a',
+                    accent: '#38bdf8',
+                },
+            },
+        },
+    },
+    plugins: [
+        require('@tailwindcss/forms'),
+        require('@tailwindcss/typography'),
+    ],
 };
 ```
 
-The second glob ensures compiled JSX emitted by the Pyxle compiler is also
-scanned when Tailwind runs in production.
+Restart `pyxle dev` whenever you change the config so Vite reloads the Tailwind process.
 
-## 3. Create a source stylesheet
+## 2. Layer in additional base styles
 
-Create `pages/styles/tailwind.css` (or any path you prefer) and add the base
-Tailwind directives:
+Add custom utilities or components inside `pages/styles/tailwind.css` using Tailwind's layering primitives:
 
 ```css
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-```
 
-Commit this file to version control so the dev server can detect changes.
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
 
-## 4. Import the stylesheet from your page code
-
-Any `.pyx` file can import CSS inside the JavaScript section. The scaffolded
-homepage already includes a reminder comment—uncomment the import once the file
-exists:
-
-```jsx
-// import './styles/tailwind.css';
-```
-
-Because Pyxle bundles JSX through Vite, the CSS import behaves the same as a
-regular React project.
-
-## 5. Optional: add npm scripts
-
-Update `package.json` with a helper script so you can build Tailwind output
-separately when needed:
-
-```json
-{
-  "scripts": {
-    "tailwind:watch": "tailwindcss -i ./pages/styles/tailwind.css -o ./pages/styles/tailwind.out.css --watch"
-  }
+    ::selection {
+        @apply bg-cyan-200 text-slate-900;
+    }
 }
 ```
 
-This is optional—the dev server already bundles your CSS when you import it. The
-script is useful when you want to pre-build styles for CI or production images.
+Since the layout imports this file, every page immediately receives the new styles. Prefer a per-page stylesheet? Create another `.css` file next to the page and import it from the JavaScript block—Vite handles the bundling.
 
-## 6. Run the dev server
+## 3. Build or watch the stylesheet
 
-```bash
-pyxle dev
+Every scaffold ships with two npm scripts so you can regenerate `/public/styles/tailwind.css`
+without wiring extra tooling:
+
+```jsonc
+{
+    "scripts": {
+        "dev:css": "tailwindcss -i ./pages/styles/tailwind.css -o ./public/styles/tailwind.css --watch",
+        "build:css": "tailwindcss -i ./pages/styles/tailwind.css -o ./public/styles/tailwind.css --minify"
+    }
+}
 ```
 
-Tailwind classes are now available everywhere you write JSX. Restart the dev
-server whenever you modify `tailwind.config.js` so Vite picks up the new glob
-patterns.
+- Run `npm run dev:css` in a second terminal while `pyxle dev` is running so edits to
+    `.pyx` files or the Tailwind entry sheet immediately refresh the linked CSS file.
+- Run `npm run build:css` when you need a standalone asset (for example, CI jobs that
+    only bundle static marketing pages). `pyxle build` already calls `npm run build`
+    automatically, so the Tailwind bundle is regenerated before every production build.
+
+Because `/styles/tailwind.css` is linked from the shared head, browsers download it during
+SSR even when JavaScript is disabled.
+
+## 4. Troubleshooting
+
+- **Classes not applying?** Ensure the class string lives inside one of the `content` paths (for example, `.pyx` or `.jsx`). Tailwind's JIT won't emit styles for files outside those globs.
+- **New plugin not loading?** Install it with `npm install -D` and add `require('plugin-name')` to the `plugins` array in `tailwind.config.cjs`.
+- **Need per-route themes?** Import a route-specific stylesheet inside that page's JavaScript block. All CSS files under `pages/` are copied to `.pyxle-build/client/pages/` so Vite can resolve them.

@@ -36,6 +36,13 @@ The CLI compiles `.pyx` files, launches Vite, and starts Starlette on
 `http://127.0.0.1:8000`. The terminal output lists both URLs alongside the
 watcher status.
 
+Open a second terminal and run `npm run dev:css` to keep `public/styles/tailwind.css`
+up to date. The scaffold links that file directly from `HEAD`, so SSR continues to
+render with full styles even when JavaScript is disabled. When you later run
+`pyxle build`, the CLI automatically executes `npm run build` (and therefore
+`npm run build:css`) before invoking Vite, so the production stylesheet is
+rebuilt without any manual steps.
+
 ## 4. Explore the scaffolded UI
 
 Open the homepage and the supporting demo routes:
@@ -127,25 +134,29 @@ async def load_showcase(request):
 Refresh the browser to see the overlay show the failing stage, the stack trace,
 and actionable breadcrumbs.
 
-## 7. Add Tailwind, layouts, or templates when ready
+## 7. Customize the Next-style starter
 
-The scaffold now ships with `pages/layout.pyx` plus a route-scoped
-`pages/projects/template.pyx`. Both files use the new `Slot` helper from
-`pyxle/client`, so leaf pages only export `slots = { hero: (...) }` instead of
-manually importing `RootLayout`. You can:
+Instead of three sample routes, the scaffold now focuses on a single polished
+homepage:
 
-- Define global chrome in `layout.pyx` using `<Slot name="hero" props={{ data }} />`.
-- Add directory-specific `template.pyx` files (they reset slot defaults when
-  encountered, so you can theme subsections like `/projects`).
-- Keep shared helpers under `pages/components/` for head/meta utilities.
+- `pages/index.pyx` seeds hero copy, feature cards, and command examples via a
+  lightweight loader. Edit the Python dicts to change the UI without touching
+  JSX.
+- `pages/index.pyx` links `/styles/tailwind.css` in `HEAD`. Keep `npm run dev:css`
+  running while developing; `pyxle build` automatically triggers `npm run build`
+  (which runs `build:css`) before Vite so production SSR remains styled. The JSX layer still
+  wires a theme toggle that stores preferences in `localStorage` and renders the
+  SVG mark/wordmark/grid from `public/branding/`.
+- `pages/layout.pyx` simply wraps your routes, so you can introduce additional
+  layouts/templates later if needed.
 
-When you're ready for utility-first styling, follow
-[`docs/tailwind.md`](tailwind.md) to install Tailwind, create a stylesheet, and
-import it from your `.pyx` modules.
+Want to tweak the Tailwind theme, add new plugins, or ship additional `.css`
+files? [`docs/tailwind.md`](tailwind.md) walks through every customization hook.
 
 ## 8. Next steps
 
-- Update `pages/index.pyx`, `pages/projects/index.pyx`, or `pages/diagnostics.pyx` with your own content (and tweak `pages/layout.pyx` / `pages/projects/template.pyx` as needed).
-- Add additional routes under `pages/` (file-based routing mirrors Next.js).
-- Run `pyxle build --no-debug` once you're ready to verify production manifests
-  before deployment (see [`docs/deployment.md`](deployment.md)).
+- Start by editing `pages/index.pyx` (loader + JSX) or `pages/layout.pyx` to fit
+  your brand.
+- Add additional routes under `pages/`—file names still map directly to URLs.
+- Run `pyxle build --no-debug` before deploying to verify the production
+  manifests (see [`docs/deployment.md`](deployment.md)).

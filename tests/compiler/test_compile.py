@@ -243,6 +243,46 @@ def test_ensure_server_import_handles_parse_failure_with_leading_blanks() -> Non
     assert lines[2] == "from pyxle.runtime import server"
 
 
+def test_ensure_server_import_follows_future_imports() -> None:
+    source = dedent(
+        """
+        from __future__ import annotations
+
+        value = 1
+        """
+    ).lstrip("\n")
+
+    result = compiler_writers._ensure_server_import(source)
+    lines = result.splitlines()
+
+    assert lines[0] == "from __future__ import annotations"
+    assert lines[1] == "from pyxle.runtime import server"
+    assert lines[2] == ""
+    assert lines[3] == "value = 1"
+
+
+def test_ensure_server_import_handles_docstring_and_future() -> None:
+    source = dedent(
+        '''
+        """Example module."""
+
+        from __future__ import annotations
+
+        answer = 42
+        '''
+    ).lstrip("\n")
+
+    result = compiler_writers._ensure_server_import(source)
+    lines = result.splitlines()
+
+    assert lines[0] == '"""Example module."""'
+    assert lines[1] == ""
+    assert lines[2] == "from __future__ import annotations"
+    assert lines[3] == "from pyxle.runtime import server"
+    assert lines[4] == ""
+    assert lines[5] == "answer = 42"
+
+
 def test_compile_persists_head_elements(tmp_path: Path) -> None:
     content = dedent(
         """

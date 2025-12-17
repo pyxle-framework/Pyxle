@@ -32,21 +32,18 @@ cd my-awesome-app
 # 3. Generated structure
 my-awesome-app/
 ├── pages/
-│   ├── index.pyx             # Homepage (/)
-│   ├── components/
-│   │   └── layout.jsx        # Shared layout + helpers
+│   ├── index.pyx             # Next-style homepage (/)
+│   ├── layout.pyx            # Minimal wrapper (slots-ready)
 │   └── api/
 │       └── pulse.py          # API route (/api/pulse)
-├── middlewares/
-│   └── telemetry.py          # Starlette middleware registered via config
 ├── public/
 │   ├── favicon.ico
-│   ├── scripts/
-│   │   └── pyxle-effects.js  # Gradient + clipboard utilities (deferred)
-│   └── styles/
-│       └── pyxle.css         # Dark theme styles for the starter
+│   ├── branding/
+│   │   ├── pyxle-mark.svg    # Logo used in the hero
+│   │   ├── pyxle-wordmark-*.svg
+│   │   └── pyxle-grid.svg    # Background pattern referenced by Tailwind gradients
 ├── .gitignore
-├── pyxle.config.json         # Project + middleware configuration
+├── pyxle.config.json         # Starts with an empty middleware list
 ├── package.json
 └── requirements.txt
 
@@ -74,97 +71,106 @@ INFO:     Watching for file changes in ./pages
 
 **`pages/index.pyx`**
 
-The starter renders a dark-mode dashboard that exercises every surface area: the loader shares utilities with the bundled API (`pages/api/pulse.py`), middleware populates `request.state`, and JSX imports a shared layout plus external CSS/JS from `public/styles/pyxle.css` and `public/scripts/pyxle-effects.js`.
-
-Shared helpers live under `pages/components/`. Use
-`pages.components.build_head()` to compose escaped `<head>` metadata and import
-`RootLayout`, `Link`, or `SectionLabel` from `pages/components/layout.jsx`. See
-[`docs/components.md`](docs/components.md) for details and usage tips.
-
-The compiler captures literal `HEAD` assignments directly in the metadata JSON
-for fast SSR. Whenever `HEAD` is produced by an expression (for example a
-helper like `build_head()` or a variable imported from another module) the
-assignment is marked as **dynamic** instead. In that case the dev server and
-SSR renderer import the generated server module at request time and read the
-current `HEAD` value, so helper-based declarations work out of the box.
+The starter now mirrors a polished Next.js hero: the loader seeds hero copy,
+feature highlights, and quick commands, while the JSX half layers Tailwind via
+CDN, toggles the `dark` class on `<html>`, and displays the SVG mark/wordmark
+from `public/branding/`. No helper modules are required—everything stays inside
+one `.pyx` file so newcomers can follow along easily.
 
 ```python
-from pages.components import build_head
-from pages.api.pulse import build_pulse_payload
+from datetime import datetime, timezone
 from pyxle import __version__
 
-HEAD = build_head(
-   title="Pyxle • Minimal dark starter",
-   description="Demonstrates loaders, React SSR, APIs, middleware, and static assets.",
-   extra=[
-      '<link rel="stylesheet" href="/styles/pyxle.css" />',
-      '<script type="module" src="/scripts/pyxle-effects.js" defer></script>',
-   ],
-)
+HEAD = """
+<title>Pyxle • Next-style starter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<script>
+(function() {
+   try {
+      var key = 'pyxle-theme-preference';
+      var stored = localStorage.getItem(key);
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (stored === 'dark' || (!stored && prefersDark)) {
+         document.documentElement.classList.add('dark');
+      } else {
+         document.documentElement.classList.remove('dark');
+      }
+   } catch (error) {}
+})();
+</script>
+"""
 
 
 @server
 async def load_home(request):
-   pulse = build_pulse_payload()
-   middleware_snapshot = getattr(request.state, "pyxle_demo", {})
-
+   now = datetime.now(tz=timezone.utc)
    return {
       "hero": {
-         "eyebrow": "PYXLE STARTER",
-         "title": "Python + React in a single file.",
-         "version": __version__,
+         "eyebrow": "PYTHON ✕ REACT",
+         "title": "Build like Next.js without leaving Python.",
+         "tagline": "Ship loaders and components together, powered by Vite + Starlette.",
       },
+      "telemetry": {"version": __version__, "timestamp": now.isoformat()},
       "commands": [
          {"label": "Scaffold", "command": "pyxle init my-app"},
          {"label": "Run dev server", "command": "pyxle dev"},
-         {"label": "Call API", "command": "curl http://localhost:8000/api/pulse"},
+         {"label": "Call diagnostics", "command": "curl http://localhost:8000/api/pulse"},
       ],
-      "middleware": middleware_snapshot,
-      "api": {
-         "endpoint": "/api/pulse",
-         "prefill": pulse,
-         "notes": ["Loader + API share build_pulse_payload()"],
-      },
    }
 
 
 # --- JavaScript/PSX (Client + Server for SSR) ---
 import React, { useEffect, useState } from 'react';
-import { RootLayout, SectionLabel } from './components/layout.jsx';
+import { Link } from 'pyxle/client';
+
+const THEME_KEY = 'pyxle-theme-preference';
+
+const resolvePreferredTheme = () => {
+   if (typeof window === 'undefined') {
+      return 'light';
+   }
+   const stored = window.localStorage.getItem(THEME_KEY);
+   if (stored === 'dark' || stored === 'light') {
+      return stored;
+   }
+   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+};
 
 export default function Page({ data }) {
-   const [payload, setPayload] = useState(data.api.prefill);
+   const [theme, setTheme] = useState(() => 'light');
 
    useEffect(() => {
-      let cancelled = false;
-      const refresh = async () => {
-         const response = await fetch(data.api.endpoint, {
-            headers: { 'x-pyxle-demo': 'pulse' },
-         });
-         if (!cancelled) {
-            setPayload(await response.json());
-         }
-      };
-      refresh();
-      const id = window.setInterval(refresh, 8_000);
-      return () => {
-         cancelled = true;
-         window.clearInterval(id);
-      };
-   }, [data.api.endpoint]);
+      setTheme(resolvePreferredTheme());
+   }, []);
+
+   useEffect(() => {
+      if (typeof document === 'undefined') {
+         return;
+      }
+      document.documentElement.classList.toggle('dark', theme === 'dark');
+      window.localStorage.setItem(THEME_KEY, theme);
+   }, [theme]);
 
    return (
-      <RootLayout>
-         <section className="pyxle-hero">
-            <p className="pyxle-hero__eyebrow">{data.hero.eyebrow}</p>
-            <h1>{data.hero.title}</h1>
-            <p>v{data.hero.version}</p>
-         </section>
-         <section className="pyxle-section">
-            <SectionLabel title="API pulse" description="pages/api/pulse.py" />
-            {/* Command buttons, middleware snapshot, and API telemetry panels */}
-         </section>
-      </RootLayout>
+      <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50">
+         <header className="rounded-3xl border border-white/60 bg-white/80 p-6 shadow-lg shadow-blue-500/10 backdrop-blur dark:border-slate-800/60 dark:bg-slate-900/70">
+            <div className="flex items-center justify-between">
+               <img src={theme === 'dark' ? '/branding/pyxle-wordmark-light.svg' : '/branding/pyxle-wordmark-dark.svg'} alt="Pyxle" className="h-6" />
+               <button type="button" onClick={() => setTheme((value) => (value === 'dark' ? 'light' : 'dark'))} className="h-10 w-10 rounded-full border border-slate-200/70 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                  Toggle
+               </button>
+            </div>
+            <p className="mt-4 text-xs uppercase tracking-[0.35em] text-slate-400 dark:text-slate-500">{data.hero.eyebrow}</p>
+            <h1 className="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{data.hero.title}</h1>
+            <p className="mt-2 text-base text-slate-600 dark:text-slate-300">{data.hero.tagline}</p>
+            <Link href="/api/pulse" className="mt-4 inline-flex rounded-full border border-slate-200/80 px-4 py-2 text-sm font-medium text-slate-900 dark:border-slate-700 dark:text-white">
+               View API pulse →
+            </Link>
+         </header>
+      </div>
    );
 }
 ```
@@ -207,6 +213,8 @@ pyxle/
 ├── architecture.md
 ├── pyxle/
 │   ├── __init__.py
+│   ├── styles/
+│   │   └── tailwind.css
 │   ├── cli/
 │   ├── compiler/
 │   ├── devserver/
@@ -214,9 +222,9 @@ pyxle/
 │   ├── ssr/
 │   └── templates/
 ├── tests/
-├── tasks/
-└── examples/
-```
+│   │   └── pyxle-grid.svg
+├── postcss.config.cjs
+├── tailwind.config.cjs
 
 ### Runtime Generated Structure
 
@@ -224,17 +232,19 @@ pyxle/
 my-app/
 ├── pages/
 │   ├── index.pyx
-│   ├── components/
-│   │   └── layout.jsx
+│   ├── layout.pyx
+│   ├── styles/
+│   │   └── tailwind.css
 │   └── api/pulse.py
-├── middlewares/
-│   └── telemetry.py
 ├── public/
 │   ├── favicon.ico
-│   ├── scripts/
-│   │   └── pyxle-effects.js
+│   ├── branding/
+│   │   ├── pyxle-mark.svg
+│   │   ├── pyxle-wordmark-dark.svg
+│   │   ├── pyxle-wordmark-light.svg
+│   │   └── pyxle-grid.svg
 │   └── styles/
-│       └── pyxle.css
+│       └── tailwind.css
 ├── .pyxle-build/
 │   ├── client/
 │   │   ├── client-entry.js
@@ -251,9 +261,7 @@ my-app/
 ## 5. `.pyx` Intelligent Single-File Pipeline
 
 1. **Read & Tokenize** – Compiler ingests `.pyx` content line-by-line.
-2. **Mode Detection** – State machine switches between Python and JS/PSX:
-   - Root-level `import`, `from`, `def`, `class`, `@` (or decorators) enter Python mode.
-   - Indentation determines block extent; returning to root exits back to JS/PSX.
+2. **Mode Detection** – The compiler now builds a lightweight parse tree that groups consecutive Python and JS/PSX segments so authors can interleave imports, loaders, helpers, and React code in any order. Root-level `import`, `from`, `def`, `class`, `@` (or decorators) still steer Python segments, while JSX heuristics flip the parser back to JS/PSX once execution returns to the module scope (indentation determines when blocks finish).
 3. **Server Extraction** – Python sections are concatenated into `.pyxle-build/server/<route>.py`. The first `@server`-decorated async function becomes the loader.
 4. **Client Extraction** – Remaining lines become `.pyxle-build/client/<route>.jsx`. The default export is the React component for SSR + hydration.
 5. **Metadata Generation** – Compiler returns `(python_code, jsx_code, server_fn_name)` powering routing tables and SSR metadata.
@@ -446,10 +454,10 @@ class UserDetailEndpoint(HTTPEndpoint):
 
 - Create project directory structure (`pages/`, `pages/api/`, `public/`).
 - Scaffold starter files:
-   - `pages/index.pyx` (dark-mode dashboard using loaders + middleware).
-   - `pages/components/layout.jsx` helpers and `pages/api/pulse.py` diagnostics endpoint.
-   - `public/styles/pyxle.css`, `public/scripts/pyxle-effects.js`, and favicon.
-   - `middlewares/telemetry.py` plus `pyxle.config.json` registering it by default.
+   - `pages/index.pyx` (Next.js-inspired homepage with Tailwind + theme toggle).
+   - `pages/layout.pyx` wrapper and the `pages/api/pulse.py` diagnostics endpoint.
+   - Tailwind/PostCSS config files plus branding SVGs (mark, wordmarks, grid) and favicon under `public/branding/`.
+   - `pyxle.config.json` with an empty `middleware` list so you opt in when ready.
    - `package.json`, `requirements.txt`, `.gitignore`.
 - Enforce template utilities only when roadmap tasks require them.
 

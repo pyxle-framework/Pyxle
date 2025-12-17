@@ -31,30 +31,24 @@ def test_init_scaffolds_project_structure() -> None:
         assert project_dir.is_dir()
         assert (project_dir / "pages" / "layout.pyx").exists()
         assert (project_dir / "pages" / "index.pyx").exists()
-        assert (project_dir / "pages" / "projects" / "index.pyx").exists()
-        assert (project_dir / "pages" / "projects" / "template.pyx").exists()
-        assert (project_dir / "pages" / "diagnostics.pyx").exists()
-        assert (project_dir / "pages" / "[...slug].pyx").exists()
         assert (project_dir / "pages" / "api" / "pulse.py").exists()
-        components_dir = project_dir / "pages" / "components"
-        assert (components_dir / "__init__.py").exists()
-        head_module = (components_dir / "head.py").read_text(encoding="utf-8")
-        assert "build_head" in head_module
-        site_module = (components_dir / "site.py").read_text(encoding="utf-8")
-        assert "build_page_head" in site_module
-        layout_module = (components_dir / "layout.jsx").read_text(encoding="utf-8")
-        assert "export function RootLayout" in layout_module
-        assert "export function Link" in layout_module
-        assert (project_dir / "middlewares" / "telemetry.py").exists()
-        assert (project_dir / "public" / "styles" / "pyxle.css").exists()
-        assert (project_dir / "public" / "scripts" / "pyxle-effects.js").exists()
+        assert (project_dir / "pages" / "styles" / "tailwind.css").exists()
+        assert (project_dir / "tailwind.config.cjs").exists()
+        assert (project_dir / "postcss.config.cjs").exists()
+        assert (project_dir / "public" / "styles" / "tailwind.css").exists()
+        branding_dir = project_dir / "public" / "branding"
+        assert (branding_dir / "pyxle-mark.svg").exists()
+        assert (branding_dir / "pyxle-wordmark-dark.svg").exists()
+        assert (branding_dir / "pyxle-wordmark-light.svg").exists()
+        assert (branding_dir / "pyxle-grid.svg").exists()
+        assert not (project_dir / "pages" / "components").exists()
         assert (project_dir / "public" / "favicon.ico").read_bytes() == default_favicon_bytes()
 
         package_json = read_json(project_dir / "package.json")
         assert package_json["name"] == "my-app"
 
         config_payload = json.loads((project_dir / "pyxle.config.json").read_text(encoding="utf-8"))
-        assert config_payload["middleware"] == ["middlewares.telemetry:PyxleTelemetryMiddleware"]
+        assert config_payload["middleware"] == []
 
         next_steps = result.stdout.splitlines()
         assert any("Next steps" in line for line in next_steps)

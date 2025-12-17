@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Iterable, Literal, Sequence
 
 from .exceptions import CompilationError
 
@@ -24,6 +24,8 @@ _PYTHON_PREFIXES = (
     "except",
     "finally:",
 )
+
+_STRING_PREFIX_CHARS = frozenset("rRuUfFbB")
 
 
 @dataclass(frozen=True)
@@ -44,6 +46,26 @@ class PyxParseResult:
     head_is_dynamic: bool
 
 
+@dataclass(slots=True)
+class _LineNode:
+    number: int
+    text: str
+
+
+@dataclass(slots=True)
+class _SegmentNode:
+    kind: Literal["python", "jsx"]
+    lines: list[_LineNode]
+
+    def append(self, *, number: int, text: str) -> None:
+        self.lines.append(_LineNode(number=number, text=text))
+
+
+@dataclass(slots=True)
+class _DocumentNode:
+    segments: list[_SegmentNode]
+
+
 class PyxParser:
     """Split a `.pyx` source file into Python and JSX sections."""
 
@@ -51,67 +73,20 @@ class PyxParser:
         text = source_path.read_text(encoding="utf-8")
         lines = self._normalize_newlines(text)
 
+        document = self._build_document(lines)
+
         python_lines: list[str] = []
         python_line_numbers: list[int] = []
         jsx_lines: list[str] = []
 
-        mode: str = "auto"  # auto | python | jsx
-        python_started = False
-        indent_stack: list[int] = [0]
-        expect_indent = False
-
-        for idx, line in enumerate(lines, start=1):
-            stripped = line.strip()
-
-            toggle = self._detect_mode_toggle(stripped)
-            if toggle:
-                mode = toggle
-                if mode == "python":
-                    python_started = True
-                    indent_stack = [0]
-                    expect_indent = False
-                else:
-                    expect_indent = False
-                continue
-
-            indent = self._leading_spaces(line)
-
-            if mode == "python":
-                if self._is_probable_js(stripped, indent):
-                    mode = "jsx"
-                    expect_indent = False
-                    jsx_lines.append(line)
-                    continue
-                expect_indent = self._update_python_indentation(
-                    indent_stack,
-                    indent,
-                    stripped,
-                    idx,
-                    expect_indent,
-                )
-                python_lines.append(line)
-                python_line_numbers.append(idx)
-                continue
-
-            if mode == "jsx":
-                jsx_lines.append(line)
-                continue
-
-            # mode == auto
-            if not stripped and not python_started:
-                # Skip leading blank lines
-                continue
-
-            if self._is_probable_python(stripped, indent, python_started):
-                python_lines.append(line)
-                python_line_numbers.append(idx)
-                python_started = True
-                mode = "python"
-                indent_stack = [indent] if indent > 0 else [0]
-                expect_indent = self._line_expects_indent(stripped)
+        for segment in document.segments:
+            if segment.kind == "python":
+                for entry in segment.lines:
+                    python_lines.append(entry.text)
+                    python_line_numbers.append(entry.number)
             else:
-                mode = "jsx"
-                jsx_lines.append(line)
+                for entry in segment.lines:
+                    jsx_lines.append(entry.text)
 
         python_code = self._join_lines(python_lines)
         jsx_code = self._join_lines(jsx_lines)
@@ -130,6 +105,107 @@ class PyxParser:
             head_elements=head_elements,
             head_is_dynamic=head_is_dynamic,
         )
+
+    def _build_document(self, lines: Sequence[str]) -> _DocumentNode:
+        document = _DocumentNode(segments=[])
+        current_segment: _SegmentNode | None = None
+        python_state = _PythonState(parser=self)
+        python_started = False
+        mode: str = "auto"
+
+        for idx, line in enumerate(lines, start=1):
+            stripped = line.strip()
+
+            toggle = self._detect_mode_toggle(stripped)
+            if toggle:
+                mode = toggle
+                if toggle == "python":
+                    python_started = True
+                python_state.reset_for_new_segment()
+                current_segment = None
+                continue
+
+            indent = self._leading_spaces(line)
+            classification, mode = self._classify_line(
+                stripped=stripped,
+                indent=indent,
+                python_started=python_started,
+                mode=mode,
+                python_state=python_state,
+            )
+
+            if classification is None:
+                continue
+
+            if classification == "python":
+                python_started = True
+
+            if current_segment is None or current_segment.kind != classification:
+                if classification == "python":
+                    python_state.reset_for_new_segment()
+                current_segment = _SegmentNode(kind=classification, lines=[])
+                document.segments.append(current_segment)
+
+            current_segment.append(number=idx, text=line)
+
+            if classification == "python":
+                python_state.advance(
+                    line=line,
+                    stripped=stripped,
+                    indent=indent,
+                    line_number=idx,
+                )
+
+        return document
+
+    def _classify_line(
+        self,
+        *,
+        stripped: str,
+        indent: int,
+        python_started: bool,
+        mode: str,
+        python_state: _PythonState,
+    ) -> tuple[str | None, str]:
+        if mode == "python":
+            if self._should_switch_to_js(stripped, indent, python_state):
+                return "jsx", "jsx"
+            return "python", "python"
+
+        if mode == "jsx":
+            if self._should_switch_to_python(stripped, indent):
+                return "python", "python"
+            return "jsx", "jsx"
+
+        # mode == auto
+        if not stripped and not python_started:
+            return None, "auto"
+
+        if self._is_probable_python(stripped, indent, python_started):
+            return "python", "python"
+
+        return "jsx", "jsx"
+
+    def _should_switch_to_js(
+        self,
+        stripped: str,
+        indent: int,
+        python_state: _PythonState,
+    ) -> bool:
+        if not stripped:
+            return False
+        if not python_state.can_switch_segments(indent):
+            return False
+        return self._is_probable_js(stripped, indent)
+
+    def _should_switch_to_python(self, stripped: str, indent: int) -> bool:
+        if not stripped:
+            return False
+        if indent > 0:
+            return False
+        if self._is_probable_js(stripped, indent):
+            return False
+        return self._is_probable_python(stripped, indent, True)
 
     def _parse_python_ast(
         self,
@@ -396,6 +472,48 @@ class PyxParser:
         return python_line_numbers[index]
 
     @staticmethod
+    def _update_triple_quote_state(
+        line: str,
+        current: str | None,
+    ) -> str | None:
+        """Track whether we are inside a multi-line triple-quoted string."""
+
+        i = 0
+        length = len(line)
+
+        while i < length:
+            if current is not None:
+                if line.startswith(current, i):
+                    i += 3
+                    current = None
+                    continue
+                i += 1
+                continue
+
+            if line[i] == "#":
+                break
+
+            if line.startswith('"""', i) or line.startswith("'''", i):
+                current = line[i : i + 3]
+                i += 3
+                continue
+
+            if line[i] in _STRING_PREFIX_CHARS:
+                start = i
+                while start < length and line[start] in _STRING_PREFIX_CHARS:
+                    start += 1
+                if start + 3 <= length and (
+                    line.startswith('"""', start) or line.startswith("'''", start)
+                ):
+                    current = line[start : start + 3]
+                    i = start + 3
+                    continue
+
+            i += 1
+
+        return current
+
+    @staticmethod
     def _has_server_decorator(decorators: Sequence[ast.expr]) -> bool:
         for deco in decorators:
             target = deco
@@ -406,3 +524,45 @@ class PyxParser:
             if isinstance(target, ast.Attribute) and target.attr == "server":
                 return True
         return False
+
+
+class _PythonState:
+    """Track indentation and string state for Python segments."""
+
+    def __init__(self, *, parser: PyxParser):
+        self._parser = parser
+        self.reset_for_new_segment()
+
+    def reset_for_new_segment(self) -> None:
+        self.indent_stack: list[int] = [0]
+        self.expect_indent = False
+        self.string_delimiter: str | None = None
+
+    def advance(
+        self,
+        *,
+        line: str,
+        stripped: str,
+        indent: int,
+        line_number: int,
+    ) -> None:
+        self.expect_indent = self._parser._update_python_indentation(
+            self.indent_stack,
+            indent,
+            stripped,
+            line_number,
+            self.expect_indent,
+        )
+        self.string_delimiter = self._parser._update_triple_quote_state(
+            line,
+            self.string_delimiter,
+        )
+
+    def can_switch_segments(self, indent: int) -> bool:
+        if self.string_delimiter is not None:
+            return False
+        if self.expect_indent:
+            return False
+        if indent == 0:
+            return True
+        return len(self.indent_stack) == 1 and self.indent_stack[0] == indent

@@ -39,6 +39,12 @@ pyxle dev \
   --print-config
 ```
 
+Run `npm run dev:css` in a parallel terminal to keep `/public/styles/tailwind.css`
+up to date; the scaffold links that file directly from `HEAD`, so SSR remains styled
+even when JavaScript is disabled. The `pyxle build` command automatically runs
+`npm run build` (and therefore the Tailwind `build:css` script) before invoking Vite,
+so production builds always pick up the latest stylesheet without a separate step.
+
 Key behaviors:
 
 - The command reads `pyxle.config.json` (override with `--config`). CLI flags win over file settings.
@@ -76,6 +82,9 @@ pyxle build \
   --config pyxle.config.json \
   --out-dir dist
 ```
+
+`pyxle build` internally executes `npm run build`—which runs `build:css` before Vite—so
+the linked `/public/styles/tailwind.css` is regenerated automatically.
 
 What the command does:
 

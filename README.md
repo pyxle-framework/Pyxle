@@ -2,6 +2,15 @@
 
 Pyxle is a Python-first full-stack framework that pairs a Typer-powered CLI with Starlette, Vite, and React to deliver a Next.js-style developer experience. The MVP currently focuses on the project scaffolding workflow.
 
+## Project Links
+
+- Homepage — [pyxle.dev](https://pyxle.dev)
+- Docs — [pyxle.dev/docs](https://pyxle.dev/docs)
+- GitHub — [github.com/shivamsn97/pyxle](https://github.com/shivamsn97/pyxle)
+- PyPI — [pypi.org/project/pyxle](https://pypi.org/project/pyxle/)
+- Issues — [github.com/shivamsn97/pyxle/issues](https://github.com/shivamsn97/pyxle/issues)
+- Maintainer — Shivam Saini (<hello@pyxle.dev>)
+
 ## Quick Start
 
 ```bash
@@ -17,7 +26,14 @@ pyxle install
 pyxle dev
 ```
 
-The scaffold ships a ready-to-use telemetry middleware via `pyxle.config.json`, dark-mode styles under `public/styles/pyxle.css`, and a tiny `public/scripts/pyxle-effects.js` helper so the `.pyx` page stays focused on Python + React behavior instead of inline CSS/JS. The default project now includes three ready-to-edit routes (overview, projects, diagnostics) so you can immediately explore loaders, middleware, and API wiring.
+Run `npm run dev:css` in a second terminal to keep `/public/styles/tailwind.css`
+in sync; the scaffold links this file directly from the shared head so SSR stays
+fully styled even when JavaScript is disabled.
+`pyxle build` automatically invokes `npm run build`, which runs the Tailwind
+`build:css` script before delegating to Vite, so production bundles always pick
+up your latest stylesheet without extra commands.
+
+The scaffold now mirrors a Next.js landing page: a single `.pyx` route renders a Tailwind-powered hero, feature cards, and quick-start commands with a built-in light/dark toggle. Branding assets (mark, wordmark, and grid pattern) live in `public/branding/`, Tailwind ships via `tailwind.config.cjs` + `postcss.config.cjs`, and the compiled stylesheet (`public/styles/tailwind.css`) is linked directly from the shared head so SSR answers are fully styled even when JavaScript is disabled. Run `npm run dev:css` alongside `pyxle dev` to keep the stylesheet fresh while editing.
 
 Prefer a narrative version? Follow the step-by-step guide in
 [`docs/walkthrough.md`](docs/walkthrough.md) to see the CLI, compiler, and dev
@@ -34,13 +50,11 @@ server working together with screenshots and overlay tips.
 
 ## Custom middleware hooks
 
-Projects can inject Starlette-compatible middleware globally via `pyxle.config.json`:
+Projects can inject Starlette-compatible middleware globally via `pyxle.config.json`. The scaffold leaves the list empty so you opt-in only when needed:
 
 ```jsonc
 {
-	"middleware": [
-		"middlewares.telemetry:PyxleTelemetryMiddleware"
-	]
+	"middleware": []
 }
 ```
 
@@ -123,53 +137,48 @@ See [`docs/deployment.md`](docs/deployment.md) for the full checklist covering p
 my-awesome-app/
 ├── .gitignore
 ├── pyxle.config.json
+├── postcss.config.cjs
 ├── package.json
+├── tailwind.config.cjs
 ├── pages/
 │   ├── layout.pyx
 │   ├── index.pyx
-│   ├── projects/
-│   │   ├── index.pyx
-│   │   └── template.pyx
-│   ├── diagnostics.pyx
-│   ├── components/
-│   │   ├── __init__.py
-│   │   ├── head.py
-│   │   ├── layout.jsx
-│   │   └── site.py
+│   ├── styles/
+│   │   └── tailwind.css
 │   └── api/
 │       └── pulse.py
-├── middlewares/
-│   ├── __init__.py
-│   └── telemetry.py
 ├── public/
 │   ├── favicon.ico
-│   ├── scripts/
-│   │   └── pyxle-effects.js
+│   ├── branding/
+│   │   ├── pyxle-mark.svg
+│   │   ├── pyxle-wordmark-dark.svg
+│   │   ├── pyxle-wordmark-light.svg
+│   │   └── pyxle-grid.svg
 │   └── styles/
-│       └── pyxle.css
+│       └── tailwind.css
 └── requirements.txt
 ```
 
-## Shared layout primitives
+## Starter experience
 
-Every scaffolded project now includes reusable helpers under
-`pages/components/` so you can compose consistent pages immediately:
+`pages/index.pyx` now mirrors a modern Next.js marketing page:
 
-- `head.py` exports `build_head()` for safe `<head>` fragments.
-- `layout.jsx` exports `RootLayout`, `Link`, and `SectionLabel`.
-- `site.py` exports `build_page_head()`, `base_page_payload()`, and `site_metadata()` so every page can share navigation + head tags.
-- `layout.pyx` wraps every page with the shared chrome and uses the new `Slot` helper from `pyxle/client` so routes can push hero/CTA content without importing `RootLayout` directly.
-- `pages/projects/template.pyx` demonstrates a nested template that scopes styling for a specific route tree while still delegating data and slots to the leaf page.
+- **Single loader:** The Python section seeds hero copy, feature cards, and command examples—edit the dicts to brand your project.
+- **Tailwind everywhere:** `pages/index.pyx` links `/styles/tailwind.css` directly in `HEAD`. Run `npm run dev:css` while developing, and let `pyxle build` trigger `npm run build` (which runs `build:css` first) so production SSR stays styled without relying on JavaScript.
+- **Theme toggle:** A tiny hook stores the preferred mode in `localStorage` and toggles the `dark` class on `<html>`.
+- **Brand kit:** `/public/branding/` contains the Pyxle mark, wordmark, and background grid so the UI feels intentional out of the box.
 
-Read more about how to customize these pieces in
-[`docs/components.md`](docs/components.md).
+Use this page as a launchpad: duplicate it for additional routes, or strip it down to a blank slate once you understand the loader/component flow.
 
 ## Tailwind CSS
 
-Pyxle works with Tailwind the same way any Vite-powered React app does. Follow
-the step-by-step integration guide in [`docs/tailwind.md`](docs/tailwind.md)
-to add the dependencies, configure the `content` globs for `.pyx` files, and
-import your generated stylesheet inside the JavaScript portion of a page.
+New projects already ship with Tailwind, PostCSS, and the official forms & typography plugins wired up:
+
+- `tailwind.config.cjs` watches both `.pyx` sources and the generated `.pyxle-build/client/pages/**/*.jsx` files.
+- `postcss.config.cjs` keeps Vite aware of the Tailwind + Autoprefixer plugins.
+- `pages/styles/tailwind.css` contains the `@tailwind` directives. Run `npm run dev:css` during development, and rely on `pyxle build` (or a manual `npm run build`) to execute the `build:css` script before Vite so every SSR response is fully styled.
+
+Need to extend the theme, add custom layers, or change the content globs? Follow the playbook in [`docs/tailwind.md`](docs/tailwind.md) for tips on overriding the defaults.
 
 ## Development
 

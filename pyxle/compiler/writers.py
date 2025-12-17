@@ -98,19 +98,13 @@ def _ensure_server_import(source: str) -> str:
         return source
 
     lines = source.splitlines()
-    insert_at = 0
-    if module is not None and module.body:
-        first_stmt = module.body[0]
-        if isinstance(first_stmt, ast.Expr) and isinstance(first_stmt.value, ast.Constant) and isinstance(first_stmt.value.value, str):
-            # Preserve module docstring at the very top.
-            insert_at = (first_stmt.end_lineno or 1)
-    elif lines and not lines[0].strip():
-        # Skip leading blank lines when no AST metadata is available.
-        while insert_at < len(lines) and not lines[insert_at].strip():
-            insert_at += 1
-
+    insert_at = _determine_server_import_index(lines, module)
     lines.insert(insert_at, _SERVER_IMPORT)
-    return "\n".join(lines) + ("\n" if source.endswith("\n") else "")
+
+    result = "\n".join(lines)
+    if source.endswith("\n"):
+        result += "\n"
+    return result
 
 
 def _needs_server_import(module: ast.Module) -> bool:
@@ -133,3 +127,51 @@ def _needs_server_import(module: ast.Module) -> bool:
                 if name == "server":
                     return False
     return True
+
+
+def _determine_server_import_index(lines: list[str], module: ast.Module | None) -> int:
+    if not lines:
+        return 0
+
+    line_after_prelude = _line_after_docstring_and_future(module)
+    if line_after_prelude is not None:
+        return min(max(line_after_prelude, 0), len(lines))
+
+    index = 0
+    while index < len(lines) and not lines[index].strip():
+        index += 1
+    return index
+
+
+def _line_after_docstring_and_future(module: ast.Module | None) -> int | None:
+    if module is None or not module.body:
+        return None
+
+    insert_line = 0
+    body_index = 0
+
+    first_stmt = module.body[0]
+    if _is_module_docstring(first_stmt):
+        insert_line = first_stmt.end_lineno or first_stmt.lineno
+        body_index = 1
+
+    while body_index < len(module.body):
+        node = module.body[body_index]
+        if isinstance(node, ast.ImportFrom) and node.module == "__future__":
+            insert_line = node.end_lineno or node.lineno
+            body_index += 1
+            continue
+        break
+
+    if insert_line == 0:
+        return None
+    return insert_line
+
+
+def _is_module_docstring(node: ast.stmt) -> bool:
+    return (
+        isinstance(node, ast.Expr)
+        and isinstance(node.value, ast.Constant)
+        and isinstance(node.value.value, str)
+        and node.col_offset == 0
+    )

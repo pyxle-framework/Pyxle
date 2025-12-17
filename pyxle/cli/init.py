@@ -23,21 +23,17 @@ def build_template_registry() -> TemplateRegistry:
     registry.register("package.json", ScaffoldingTemplate("package.json"))
     registry.register("requirements.txt", ScaffoldingTemplate("requirements.txt"))
     registry.register("pyxle.config.json", ScaffoldingTemplate("pyxle.config.json"))
+    registry.register("postcss.config.cjs", ScaffoldingTemplate("postcss.config.cjs"))
+    registry.register("tailwind.config.cjs", ScaffoldingTemplate("tailwind.config.cjs"))
     registry.register("pages/layout.pyx", ScaffoldingTemplate("pages/layout.pyx"))
     registry.register("pages/index.pyx", ScaffoldingTemplate("pages/index.pyx"))
-    registry.register("pages/projects/index.pyx", ScaffoldingTemplate("pages/projects/index.pyx"))
-    registry.register("pages/projects/template.pyx", ScaffoldingTemplate("pages/projects/template.pyx"))
-    registry.register("pages/diagnostics.pyx", ScaffoldingTemplate("pages/diagnostics.pyx"))
-    registry.register("pages/[...slug].pyx", ScaffoldingTemplate("pages/[...slug].pyx"))
+    registry.register("pages/styles/tailwind.css", ScaffoldingTemplate("pages/styles/tailwind.css"))
     registry.register("pages/api/pulse.py", ScaffoldingTemplate("pages/api/pulse.py"))
-    registry.register("pages/components/__init__.py", ScaffoldingTemplate("pages/components/__init__.py"))
-    registry.register("pages/components/layout.jsx", ScaffoldingTemplate("pages/components/layout.jsx"))
-    registry.register("pages/components/head.py", ScaffoldingTemplate("pages/components/head.py"))
-    registry.register("pages/components/site.py", ScaffoldingTemplate("pages/components/site.py"))
-    registry.register("middlewares/__init__.py", ScaffoldingTemplate("middlewares/__init__.py"))
-    registry.register("middlewares/telemetry.py", ScaffoldingTemplate("middlewares/telemetry.py"))
-    registry.register("public/styles/pyxle.css", ScaffoldingTemplate("public/styles/pyxle.css"))
-    registry.register("public/scripts/pyxle-effects.js", ScaffoldingTemplate("public/scripts/pyxle-effects.js"))
+    registry.register("public/branding/pyxle-mark.svg", ScaffoldingTemplate("public/branding/pyxle-mark.svg"))
+    registry.register("public/branding/pyxle-wordmark-dark.svg", ScaffoldingTemplate("public/branding/pyxle-wordmark-dark.svg"))
+    registry.register("public/branding/pyxle-wordmark-light.svg", ScaffoldingTemplate("public/branding/pyxle-wordmark-light.svg"))
+    registry.register("public/branding/pyxle-grid.svg", ScaffoldingTemplate("public/branding/pyxle-grid.svg"))
+    registry.register("public/styles/tailwind.css", ScaffoldingTemplate("public/styles/tailwind.css"))
     return registry
 
 
@@ -64,9 +60,11 @@ def log_next_steps(
     if include_install_hint:
         logger.info("  2. pyxle install   # installs Python + Node dependencies")
         logger.info("     (or run 'pip install -r requirements.txt' and 'npm install')")
-        logger.info("  3. pyxle dev")
+        logger.info("  3. npm run dev:css   # watches Tailwind into public/styles/tailwind.css (separate terminal)")
+        logger.info("  4. pyxle dev")
     else:
-        logger.info("  2. pyxle dev")
+        logger.info("  2. npm run dev:css   # watches Tailwind into public/styles/tailwind.css (separate terminal)")
+        logger.info("  3. pyxle dev")
 
 
 def run_init(
@@ -100,11 +98,9 @@ def run_init(
 
     logger.step("Creating project directory", target_path.as_posix())
     writer.touch_directory("pages/api")
-    writer.touch_directory("pages/components")
-    writer.touch_directory("pages/projects")
-    writer.touch_directory("middlewares")
+    writer.touch_directory("pages/styles")
+    writer.touch_directory("public/branding")
     writer.touch_directory("public/styles")
-    writer.touch_directory("public/scripts")
 
     context = {
         "package_name": project_slug,
