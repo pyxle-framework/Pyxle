@@ -62,6 +62,7 @@ async def build_page_response(
     try:
         artifacts = await _create_page_artifacts(
             request=request,
+            settings=settings,
             page=page,
             renderer=renderer,
             loader_breadcrumb=loader_breadcrumb,
@@ -156,6 +157,7 @@ async def build_page_navigation_response(
     try:
         artifacts = await _create_page_artifacts(
             request=request,
+            settings=settings,
             page=page,
             renderer=renderer,
             loader_breadcrumb=loader_breadcrumb,
@@ -284,6 +286,7 @@ def _compose_component_props(loader_payload: dict[str, Any]) -> dict[str, Any]:
 async def _create_page_artifacts(
     *,
     request: Request,
+    settings: DevServerSettings,
     page: PageRoute,
     renderer: ComponentRenderer,
     loader_breadcrumb: dict[str, str],
@@ -303,16 +306,33 @@ async def _create_page_artifacts(
         loader_breadcrumb["detail"] = f"Returned {len(loader_props)} key(s) with status {status_code}"
 
     head_elements = _resolve_head_elements(page, module, loader_props)
+    
+    # Merge HEAD variable with JSX Head blocks and layout head blocks
+    from pyxle.devserver.registry import find_layout_head_jsx_blocks
+    from pyxle.ssr.head_merger import merge_head_elements
+    
+    layout_head_jsx_blocks = find_layout_head_jsx_blocks(settings, page.source_relative_path)
+    
     component_props = _compose_component_props(loader_props)
     render_result = await renderer.render(page.client_module_path, component_props)
     body_html = render_result.html
     inline_styles = render_result.inline_styles
-    head_markup = render_head_markup(head_elements)
+    
+    # Convert runtime-extracted head elements (from <Head> components) to blocks
+    runtime_head_blocks = list(render_result.head_elements)
+    
+    merged_head_elements = merge_head_elements(
+        head_variable=head_elements,
+        head_jsx_blocks=page.head_jsx_blocks + tuple(runtime_head_blocks),
+        layout_head_jsx_blocks=layout_head_jsx_blocks,
+    )
+    
+    head_markup = render_head_markup(merged_head_elements)
 
     return PageArtifacts(
         component_props=component_props,
         body_html=body_html,
-        head_elements=head_elements,
+        head_elements=merged_head_elements,
         head_markup=head_markup,
         inline_styles=inline_styles,
         status_code=status_code,

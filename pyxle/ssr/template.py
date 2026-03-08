@@ -90,16 +90,20 @@ def build_document_shell(
           css_links.append(f'<link rel="stylesheet" href="/client/{asset}" />')
     css_html = "".join(f"\n    {link}" for link in css_links)
     js_src = f"/client/{js_file}"
+    
+    before_interactive_scripts = _render_before_interactive_scripts(page.scripts, nonce_attr)
+    scripts_metadata = _serialize_scripts_metadata(page.scripts)
 
     prefix = """<!DOCTYPE html>
 <html lang=\"en\">
   <head>
   <meta charset=\"utf-8\" />
-  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />{css_html}{global_styles}{inline_styles_markup}{head_block}
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />{css_html}{before_interactive_scripts}{global_styles}{inline_styles_markup}{head_block}
   </head>
   <body>
   <div id=\"root\">""".format(
       css_html=css_html,
+      before_interactive_scripts=before_interactive_scripts,
       global_styles=global_styles,
       inline_styles_markup=inline_styles_markup,
       head_block=head_block,
@@ -108,6 +112,7 @@ def build_document_shell(
   </div>
   <script id=\"__PYXLE_PROPS__\" type=\"application/json\"{nonce_attr}>{props_payload}</script>
   <script{nonce_attr}>window.__PYXLE_PAGE_PATH__ = {page_path_literal};</script>
+  <script{nonce_attr}>window.__PYXLE_SCRIPTS__ = {scripts_metadata};</script>
   <script type=\"module\" src=\"{js_src}\"></script>
   </body>
 </html>
@@ -115,24 +120,29 @@ def build_document_shell(
       nonce_attr=nonce_attr,
       props_payload=props_payload,
       page_path_literal=page_path_literal,
+      scripts_metadata=scripts_metadata,
       js_src=js_src,
     )
     return DocumentShell(prefix=prefix, suffix=suffix)
 
   vite_origin = f"http://{settings.vite_host}:{settings.vite_port}"
   react_refresh_preamble = _render_react_refresh_preamble(vite_origin, nonce_attr)
+  before_interactive_scripts = _render_before_interactive_scripts(page.scripts, nonce_attr)
+  scripts_metadata = _serialize_scripts_metadata(page.scripts)
+  
   prefix = """<!DOCTYPE html>
 <html lang=\"en\">
   <head>
   <meta charset=\"utf-8\" />
   <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
-  <script type=\"module\" src=\"{vite_origin}/@vite/client\"{nonce_attr}></script>{react_refresh_preamble}{global_styles}{inline_styles_markup}{head_block}
+  <script type=\"module\" src=\"{vite_origin}/@vite/client\"{nonce_attr}></script>{react_refresh_preamble}{before_interactive_scripts}{global_styles}{inline_styles_markup}{head_block}
   </head>
   <body>
   <div id=\"root\">""".format(
     vite_origin=vite_origin,
     nonce_attr=nonce_attr,
     react_refresh_preamble=react_refresh_preamble,
+    before_interactive_scripts=before_interactive_scripts,
     global_styles=global_styles,
     inline_styles_markup=inline_styles_markup,
     head_block=head_block,
@@ -141,6 +151,7 @@ def build_document_shell(
   </div>
   <script id=\"__PYXLE_PROPS__\" type=\"application/json\"{nonce_attr}>{props_payload}</script>
   <script{nonce_attr}>window.__PYXLE_PAGE_PATH__ = {page_path_literal};</script>
+  <script{nonce_attr}>window.__PYXLE_SCRIPTS__ = {scripts_metadata};</script>
   <script type=\"module\" src=\"{vite_origin}/client-entry.js\"></script>
   </body>
 </html>
@@ -148,6 +159,7 @@ def build_document_shell(
     nonce_attr=nonce_attr,
     props_payload=props_payload,
     page_path_literal=page_path_literal,
+    scripts_metadata=scripts_metadata,
     vite_origin=vite_origin,
   )
   return DocumentShell(prefix=prefix, suffix=suffix)
@@ -326,6 +338,56 @@ def _render_inline_styles_markup(styles: tuple[InlineStyleFragment, ...]) -> str
       f"\n  <style data-pyxle-inline-style=\"{escaped_id}\"{escaped_source}>{escaped_contents}</style>"
     )
   return "".join(fragments)
+
+
+def _render_before_interactive_scripts(scripts: tuple[dict, ...], nonce_attr: str) -> str:
+  """Render <script> tags for beforeInteractive strategy."""
+  if not scripts:
+    return ""
+  
+  fragments: list[str] = []
+  for script_dict in scripts:
+    strategy = script_dict.get("strategy", "afterInteractive")
+    if strategy != "beforeInteractive":
+      continue
+    
+    src = script_dict.get("src")
+    if not src:
+      continue
+    
+    escaped_src = escape(src, quote=True)
+    attrs: list[str] = [f'src="{escaped_src}"']
+    
+    if script_dict.get("async"):
+      attrs.append("async")
+    if script_dict.get("defer"):
+      attrs.append("defer")
+    if script_dict.get("module"):
+      attrs.append('type="module"')
+    elif script_dict.get("noModule"):
+      attrs.append("nomodule")
+    
+    if nonce_attr:
+      attrs.append(nonce_attr.strip())
+    
+    tag = f'<script {" ".join(attrs)}></script>'
+    fragments.append(f"\n  {tag}")
+  
+  return "".join(fragments)
+
+
+def _serialize_scripts_metadata(scripts: tuple[dict, ...]) -> str:
+  """Serialize scripts metadata for client-side loading."""
+  if not scripts:
+    return "[]"
+  
+  # Filter out beforeInteractive scripts (already injected in head)
+  client_scripts = [
+    s for s in scripts
+    if s.get("strategy", "afterInteractive") != "beforeInteractive"
+  ]
+  
+  return json.dumps(client_scripts, ensure_ascii=False, separators=(",", ":"))
 
 __all__ = [
   "DocumentShell",

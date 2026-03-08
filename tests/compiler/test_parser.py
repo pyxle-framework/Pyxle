@@ -791,3 +791,31 @@ def test_parse_head_elements_invalid_type_raises(tmp_path: Path) -> None:
         PyxParser().parse(source)
 
     assert "HEAD" in str(excinfo.value)
+
+
+def test_parse_triple_quoted_string_with_indented_content(tmp_path: Path) -> None:
+    """Test that indented content inside triple-quoted strings doesn't trigger indentation errors."""
+    content = dedent(
+        '''
+        HEAD = """
+            <title>Test Page</title>
+            <meta name="description" content="Test" />
+        """
+
+        export default function Page() {
+            return <div>Test</div>;
+        }
+        '''
+    ).lstrip("\n")
+
+    source = write(tmp_path, "pages/triple_quoted.pyx", content)
+    result = PyxParser().parse(source)
+
+    assert 'HEAD = """' in result.python_code
+    assert "<title>Test Page</title>" in result.python_code
+    assert '<meta name="description" content="Test" />' in result.python_code
+    # The HEAD content should be extracted with its indentation preserved
+    assert len(result.head_elements) == 1
+    assert "<title>Test Page</title>" in result.head_elements[0]
+    assert '<meta name="description" content="Test" />' in result.head_elements[0]
+    assert "export default function Page" in result.jsx_code

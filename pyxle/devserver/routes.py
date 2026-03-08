@@ -28,6 +28,9 @@ class PageRoute:
     loader_line: Optional[int]
     head_elements: tuple[str, ...]
     head_is_dynamic: bool
+    scripts: tuple[dict, ...] = ()
+    images: tuple[dict, ...] = ()
+    head_jsx_blocks: tuple[str, ...] = ()
 
     @property
     def has_loader(self) -> bool:
@@ -118,6 +121,9 @@ def _page_route(
         loader_line=entry.loader_line,
         head_elements=entry.head_elements,
         head_is_dynamic=entry.head_is_dynamic,
+        scripts=entry.scripts,
+        images=entry.images,
+        head_jsx_blocks=entry.head_jsx_blocks,
     )
 
 

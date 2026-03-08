@@ -8,6 +8,50 @@ from typing import Any, Dict
 
 
 @dataclass(frozen=True)
+class ScriptDeclaration:
+    """Represents a <Script /> element declaration in a .pyx file."""
+
+    src: str
+    strategy: str = "afterInteractive"  # beforeInteractive, afterInteractive, lazyOnload
+    async_: bool = False
+    defer: bool = False
+    module: bool = False
+    no_module: bool = False
+
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            "src": self.src,
+            "strategy": self.strategy,
+            "async": self.async_,
+            "defer": self.defer,
+            "module": self.module,
+            "noModule": self.no_module,
+        }
+
+
+@dataclass(frozen=True)
+class ImageDeclaration:
+    """Represents an <Image /> element declaration in a .pyx file."""
+
+    src: str
+    width: int | None = None
+    height: int | None = None
+    alt: str = ""
+    priority: bool = False
+    lazy: bool = True
+
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            "src": self.src,
+            "width": self.width,
+            "height": self.height,
+            "alt": self.alt,
+            "priority": self.priority,
+            "lazy": self.lazy,
+        }
+
+
+@dataclass(frozen=True)
 class PageMetadata:
     """Metadata emitted for each compiled page."""
 
@@ -19,6 +63,9 @@ class PageMetadata:
     loader_line: int | None
     head_elements: tuple[str, ...]
     head_is_dynamic: bool
+    scripts: tuple[ScriptDeclaration, ...] = ()
+    images: tuple[ImageDeclaration, ...] = ()
+    head_jsx_blocks: tuple[str, ...] = ()
 
     def to_json(self) -> Dict[str, Any]:
         return {
@@ -30,6 +77,9 @@ class PageMetadata:
             "loader_line": self.loader_line,
             "head": list(self.head_elements),
             "head_dynamic": self.head_is_dynamic,
+            "scripts": [s.to_json() for s in self.scripts],
+            "images": [i.to_json() for i in self.images],
+            "head_jsx_blocks": list(self.head_jsx_blocks),
         }
 
     @property

@@ -100,10 +100,15 @@ export default entry.contents;
       throw new Error('Component does not export a default function.');
     }
 
+    const headRegistry = createHeadRegistry();
+    globalThis.__PYXLE_HEAD_REGISTRY__ = headRegistry;
+
     const element = React.createElement(Component, props);
     const html = ReactDOMServer.renderToString(element);
     const styles = styleRegistry.list();
-    process.stdout.write(JSON.stringify({ ok: true, html, styles }));
+    const headElements = headRegistry.list();
+    
+    process.stdout.write(JSON.stringify({ ok: true, html, styles, headElements }));
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
@@ -232,4 +237,20 @@ function makeStyleIdentifier(source) {
   const digest = crypto.createHash('sha1').update(base).digest('hex').slice(0, 12);
   const safe = base.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'style';
   return `pyxle-inline-style-${safe}-${digest}`;
+}
+
+function createHeadRegistry() {
+  const elements = [];
+
+  return {
+    register(element) {
+      if (!element || typeof element !== 'string') {
+        return;
+      }
+      elements.push(element);
+    },
+    list() {
+      return elements;
+    },
+  };
 }

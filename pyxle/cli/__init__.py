@@ -34,7 +34,7 @@ create_starlette_app = None  # type: ignore[assignment]
 
 app = typer.Typer(
     name="pyxle",
-    add_completion=False,
+    add_completion=True,
     no_args_is_help=True,
     help="Pyxle CLI to scaffold and manage full-stack Python web projects.",
 )

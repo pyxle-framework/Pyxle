@@ -34,6 +34,9 @@ class PageRegistryEntry:
     loader_line: Optional[int]
     head_elements: tuple[str, ...]
     head_is_dynamic: bool
+    scripts: tuple[dict, ...] = ()
+    images: tuple[dict, ...] = ()
+    head_jsx_blocks: tuple[str, ...] = ()
 
     @property
     def has_loader(self) -> bool:
@@ -87,6 +90,9 @@ class MetadataRegistry:
                     "loader_line": entry.loader_line,
                     "head": list(entry.head_elements),
                     "head_dynamic": entry.head_is_dynamic,
+                    "scripts": list(entry.scripts),
+                    "images": list(entry.images),
+                    "head_jsx_blocks": list(entry.head_jsx_blocks),
                 }
                 for entry in self.pages
             ],
@@ -174,6 +180,9 @@ def _build_page_entry(
         loader_line=metadata.loader_line,
         head_elements=metadata.head_elements,
         head_is_dynamic=metadata.head_is_dynamic,
+        scripts=metadata.scripts,
+        images=metadata.images,
+        head_jsx_blocks=metadata.head_jsx_blocks,
     )
 
 
@@ -249,6 +258,27 @@ def _load_page_metadata(path: Path) -> Optional[PageMetadata]:
     head_dynamic_payload = payload.get("head_dynamic", False)
     head_is_dynamic = head_dynamic_payload if isinstance(head_dynamic_payload, bool) else False
 
+    scripts_payload = payload.get("scripts", [])
+    scripts: tuple[dict, ...]
+    if isinstance(scripts_payload, list) and all(isinstance(item, dict) for item in scripts_payload):
+        scripts = tuple(scripts_payload)
+    else:
+        scripts = tuple()
+
+    images_payload = payload.get("images", [])
+    images: tuple[dict, ...]
+    if isinstance(images_payload, list) and all(isinstance(item, dict) for item in images_payload):
+        images = tuple(images_payload)
+    else:
+        images = tuple()
+
+    head_jsx_blocks_payload = payload.get("head_jsx_blocks", [])
+    head_jsx_blocks: tuple[str, ...]
+    if isinstance(head_jsx_blocks_payload, list) and all(isinstance(item, str) for item in head_jsx_blocks_payload):
+        head_jsx_blocks = tuple(head_jsx_blocks_payload)
+    else:
+        head_jsx_blocks = tuple()
+
     return PageMetadata(
         route_path=route_path,
     alternate_route_paths=alternate_route_paths,
@@ -258,6 +288,9 @@ def _load_page_metadata(path: Path) -> Optional[PageMetadata]:
         loader_line=loader_line,
         head_elements=head_elements,
         head_is_dynamic=head_is_dynamic,
+        scripts=scripts,
+        images=images,
+        head_jsx_blocks=head_jsx_blocks,
     )
 
 
@@ -284,3 +317,50 @@ def _module_key(relative_path: Path, *, prefix: str, drop_leading: str | None = 
             cleaned = "_" + cleaned
         parts.append(cleaned)
     return ".".join(parts)
+
+
+def find_layout_head_jsx_blocks(
+    settings: DevServerSettings,
+    page_relative_path: Path,
+) -> tuple[str, ...]:
+    """Find and load head blocks from layout/template files that wrap the page.
+    
+    Searches ancestor directories from the page's location for layout.pyx and template.pyx
+    files, loading their compiled metadata to extract both head_jsx_blocks (from <Head>)
+    and head_elements (from legacy HEAD variables). Returns the combined blocks in 
+    directory precedence order (closest ancestor first).
+    """
+    # Compute ancestor directories in reverse order (closest to root)
+    parts = list(page_relative_path.parent.parts)
+    ancestors: List[Path] = []
+    
+    # Start with the page's immediate directory
+    if page_relative_path.parent.name:
+        ancestors.append(page_relative_path.parent)
+    
+    # Add each parent directory
+    for index in range(len(parts) - 1, 0, -1):
+        ancestors.append(Path(*parts[:index]))
+    
+    # Add root
+    ancestors.append(Path("."))
+    
+    layout_head_blocks: List[str] = []
+    
+    # Search for layout and template files in ancestor directories
+    for ancestor_dir in ancestors:
+        for filename in ("layout.pyx", "template.pyx"):
+            metadata_path = settings.metadata_build_dir / "pages" / ancestor_dir / Path(filename).with_suffix(".json")
+            # Handle root directory case
+            if ancestor_dir == Path("."):
+                metadata_path = settings.metadata_build_dir / "pages" / Path(filename).with_suffix(".json")
+            
+            metadata = _load_page_metadata(metadata_path)
+            if metadata is not None:
+                # Include both JSX Head blocks and legacy HEAD variable elements
+                if metadata.head_jsx_blocks:
+                    layout_head_blocks.extend(metadata.head_jsx_blocks)
+                if metadata.head_elements:
+                    layout_head_blocks.extend(metadata.head_elements)
+    
+    return tuple(layout_head_blocks)

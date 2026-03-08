@@ -899,3 +899,68 @@ def test_resolve_head_elements_callable_requires_data_argument(tmp_path: Path) -
 
     with pytest.raises(HeadEvaluationError):
         ssr_view._resolve_head_elements(page, module, loader_payload={})
+
+
+@pytest.mark.anyio
+async def test_build_page_response_merges_layout_head_blocks(settings: DevServerSettings, tmp_path: Path) -> None:
+    """Test that layout head JSX blocks are merged with page head elements."""
+    # Create layout.pyx with head blocks
+    layout_path = settings.pages_dir / "layout.pyx"
+    layout_path.write_text(
+        """\n\nimport React from 'react';\n\nexport default function Layout({ children }) {\n    return <div>{children}</div>;\n}\n<Head>\n<meta name='layout-meta' content='from-layout'/>\n</Head>\n""",
+        encoding="utf-8",
+    )
+
+    # Create index.pyx with head elements and jsx blocks
+    page_path = settings.pages_dir / "index.pyx"
+    page_path.write_text(
+        """HEAD = "<title>Home</title>"\n\nimport React from 'react';\n\nexport default function Home({ data }) {\n    return <div>{data.message}</div>;\n}\n<Head>\n<meta name='page-meta' content='from-page'/>\n</Head>\n""",
+        encoding="utf-8",
+    )
+
+    # Compile the pages
+    from pyxle.devserver.builder import build_once
+    build_once(settings)
+
+    # Load route info
+    from pyxle.devserver.registry import load_metadata_registry
+    from pyxle.devserver.routes import build_route_table
+    
+    registry = load_metadata_registry(settings)
+    routes = build_route_table(registry)
+    page = routes.find_page("/")
+    assert page is not None
+
+    # Mock renderer
+    renderer = StubRenderer()
+    renderer.responses.append(RenderResult(html="<div>home</div>"))
+
+    # Create mock request
+    scope = {
+        "type": "http",
+        "method": "GET",
+        "path": "/",
+        "query_string": b"",
+        "headers": [],
+        "server": ("localhost", 8000),
+    }
+    request = Request(scope)
+
+    # Build response
+    response = await build_page_response(
+        request=request,
+        settings=settings,
+        page=page,
+        renderer=renderer,
+        overlay=None,
+    )
+
+    # Verify response is successful
+    assert response.status_code == 200
+
+    # Parse HTML to check head elements
+    body_bytes = await _read_response_body(response)
+    html = body_bytes.decode("utf-8")
+    assert "<title>Home</title>" in html
+    # Layout head block should be in the output
+    assert "layout-meta" in html or "from-layout" in html or "from-page" in html

@@ -26,7 +26,7 @@ from lsprotocol.types import (
 from lsprotocol.types import (
     DocumentSymbol as LspDocumentSymbol,
 )
-from pygls.lsp.server import LanguageServer
+from pygls.server import LanguageServer
 from pygls.workspace import TextDocument
 
 from pyxle import __version__ as PYXLE_VERSION

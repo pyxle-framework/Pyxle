@@ -32,9 +32,17 @@ def write_client_bootstrap_files(settings: DevServerSettings) -> None:
         TSCONFIG_FILENAME: _render_tsconfig(),
         "pyxle/index.js": _render_client_runtime_index(),
         "pyxle/slot.jsx": _render_slot_runtime(),
+        "pyxle/script.jsx": _render_script_component(),
+        "pyxle/image.jsx": _render_image_component(),
+        "pyxle/head.jsx": _render_head_component(),
+        "pyxle/client-only.jsx": _render_client_only_component(),
         "pyxle/index.d.ts": _render_client_runtime_index_types(),
         "pyxle/link.d.ts": _render_client_runtime_link_types(),
         "pyxle/slot.d.ts": _render_slot_runtime_types(),
+        "pyxle/script.d.ts": _render_script_component_types(),
+        "pyxle/image.d.ts": _render_image_component_types(),
+        "pyxle/head.d.ts": _render_head_component_types(),
+        "pyxle/client-only.d.ts": _render_client_only_component_types(),
     }
 
     for relative_path, contents in files.items():
@@ -310,6 +318,12 @@ def _render_client_runtime_index() -> str:
               return router.prefetch(url.href);
             }
 
+            // Re-export framework primitives
+            export { Script } from './script.jsx';
+            export { Image } from './image.jsx';
+            export { Head } from './head.jsx';
+            export { default as ClientOnly } from './client-only.jsx';
+
             export { Slot, SlotProvider, useSlot, useSlots, mergeSlotLayers, normalizeSlots, getRouter };
             export default Link;
             """
@@ -488,6 +502,12 @@ def _render_client_runtime_index_types() -> str:
             export declare function navigate(href: NavigationTarget, options?: NavigationOptions): Promise<boolean>;
             export declare function prefetch(href: NavigationTarget): Promise<boolean>;
             export declare function getRouter(): PyxleRouter | null;
+
+            // Re-export framework primitives with types
+            export { Script, type ScriptProps } from './script';
+            export { Image, type ImageProps } from './image';
+            export { Head, type HeadProps } from './head';
+            export { default as ClientOnly, type ClientOnlyProps } from './client-only';
 
             export { Link, type LinkProps } from './link';
             export { Slot, SlotProvider, useSlot, useSlots, type SlotDictionary } from './slot';
@@ -1136,6 +1156,76 @@ def _render_client_entry(settings: DevServerSettings) -> str:
               if (!window.history.state || !window.history.state.pyxle) {
                 window.history.replaceState({ pyxle: true, pagePath: currentPagePath }, '', window.location.href);
               }
+              
+              // Load scripts from metadata
+              loadScripts();
+            }
+
+            function loadScripts() {
+              const scripts = window.__PYXLE_SCRIPTS__ || [];
+              const afterInteractiveScripts = [];
+              const lazyOnloadScripts = [];
+              
+              for (const scriptMeta of scripts) {
+                const strategy = scriptMeta.strategy || 'afterInteractive';
+                if (strategy === 'afterInteractive') {
+                  afterInteractiveScripts.push(scriptMeta);
+                } else if (strategy === 'lazyOnload') {
+                  lazyOnloadScripts.push(scriptMeta);
+                }
+              }
+              
+              // Load afterInteractive scripts immediately
+              for (const scriptMeta of afterInteractiveScripts) {
+                injectScript(scriptMeta);
+              }
+              
+              // Load lazyOnload scripts after idle or on load
+              if (lazyOnloadScripts.length > 0) {
+                if (typeof requestIdleCallback !== 'undefined') {
+                  requestIdleCallback(() => {
+                    for (const scriptMeta of lazyOnloadScripts) {
+                      injectScript(scriptMeta);
+                    }
+                  });
+                } else {
+                  setTimeout(() => {
+                    for (const scriptMeta of lazyOnloadScripts) {
+                      injectScript(scriptMeta);
+                    }
+                  }, 1);
+                }
+              }
+            }
+            
+            function injectScript(scriptMeta) {
+              const src = scriptMeta.src;
+              if (!src) {
+                return;
+              }
+              
+              // Check if script already exists
+              const existing = document.querySelector(`script[src="${src}"]`);
+              if (existing) {
+                return;
+              }
+              
+              const script = document.createElement('script');
+              script.src = src;
+              
+              if (scriptMeta.async) {
+                script.async = true;
+              }
+              if (scriptMeta.defer) {
+                script.defer = true;
+              }
+              if (scriptMeta.module) {
+                script.type = 'module';
+              } else if (scriptMeta.noModule) {
+                script.setAttribute('nomodule', '');
+              }
+              
+              document.head.appendChild(script);
             }
 
             bootstrap().catch(() => {});
@@ -1447,6 +1537,260 @@ def _render_tsconfig() -> str:
                 "./pyxle/**/*"
               ]
             }
+            """
+        ).strip()
+        + "\n"
+    )
+
+
+def _render_script_component() -> str:
+    return (
+        dedent(
+            """
+            /**
+             * Framework-owned Script component for Pyxle.
+             */
+            export function Script({
+              src,
+              strategy = 'afterInteractive',
+              async = false,
+              defer = false,
+              module = false,
+              noModule = false,
+              onLoad,
+              onError,
+              ...props
+            }) {
+              return null;
+            }
+
+            export default Script;
+            """
+        ).strip()
+        + "\n"
+    )
+
+
+def _render_image_component() -> str:
+    return (
+        dedent(
+            """
+            import React from 'react';
+
+            export const Image = React.forwardRef(
+              (
+                {
+                  src,
+                  width,
+                  height,
+                  alt = '',
+                  priority = false,
+                  lazy = true,
+                  className,
+                  style,
+                  onLoad,
+                  onError,
+                  ...props
+                },
+                ref
+              ) => {
+                const aspectRatio = width && height ? (width / height).toFixed(4) : undefined;
+
+                const containerStyle = {
+                  position: 'relative',
+                  width: '100%',
+                  paddingBottom: aspectRatio ? `${(height / width) * 100}%` : undefined,
+                  ...style,
+                };
+
+                const imgStyle = {
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                };
+
+                const loading = priority ? 'eager' : lazy ? 'lazy' : undefined;
+
+                return (
+                  <div style={containerStyle} className={className}>
+                    <img
+                      ref={ref}
+                      src={src}
+                      alt={alt}
+                      width={width}
+                      height={height}
+                      loading={loading}
+                      style={imgStyle}
+                      onLoad={onLoad}
+                      onError={onError}
+                      {...props}
+                    />
+                  </div>
+                );
+              }
+            );
+
+            Image.displayName = 'PyxleImage';
+            export default Image;
+            """
+        ).strip()
+        + "\n"
+    )
+
+
+def _render_head_component() -> str:
+    return (
+        dedent(
+            """
+            import React from 'react';
+            import { renderToStaticMarkup } from 'react-dom/server';
+
+            export const Head = React.forwardRef(({ children }, ref) => {
+              // Server-side: Extract head elements and register them
+              if (typeof window === 'undefined') {
+                if (typeof globalThis.__PYXLE_HEAD_REGISTRY__ !== 'undefined') {
+                  try {
+                    // Render children to static markup for extraction
+                    const headMarkup = renderToStaticMarkup(React.createElement(React.Fragment, null, children));
+                    globalThis.__PYXLE_HEAD_REGISTRY__.register(headMarkup);
+                  } catch (error) {
+                    // If rendering fails, skip registration
+                    console.error('Failed to extract head elements:', error);
+                  }
+                }
+              }
+
+              // Client-side: Update the document head during navigation
+              React.useEffect(() => {
+                if (typeof window === 'undefined') return;
+                
+                // Client-side head updates during navigation
+                // This will be implemented in a future phase
+                // For now, SSR handles the initial head elements
+              }, [children]);
+
+              // Return null - head elements are rendered elsewhere
+              return null;
+            });
+
+            Head.displayName = 'PyxleHead';
+            export default Head;
+            """
+        ).strip()
+        + "\n"
+    )
+
+
+def _render_client_only_component() -> str:
+    return (
+        dedent(
+            """
+            import React from 'react';
+
+            const ClientOnly = React.forwardRef(({ children, fallback }, ref) => {
+              const [isClient, setIsClient] = React.useState(false);
+
+              React.useEffect(() => {
+                setIsClient(true);
+              }, []);
+
+              if (!isClient) {
+                return fallback ?? React.createElement('div');
+              }
+
+              return React.createElement(React.Fragment, null, children);
+            });
+
+            ClientOnly.displayName = 'ClientOnly';
+            export default ClientOnly;
+            """
+        ).strip()
+        + "\n"
+    )
+
+
+def _render_script_component_types() -> str:
+    return (
+        dedent(
+            """
+            import type React from 'react';
+
+            export interface ScriptProps {
+              src: string;
+              strategy?: 'beforeInteractive' | 'afterInteractive' | 'lazyOnload';
+              async?: boolean;
+              defer?: boolean;
+              module?: boolean;
+              noModule?: boolean;
+              onLoad?: () => void;
+              onError?: (error: Error) => void;
+            }
+
+            export declare const Script: React.FC<ScriptProps>;
+            export default Script;
+            """
+        ).strip()
+        + "\n"
+    )
+
+
+def _render_image_component_types() -> str:
+    return (
+        dedent(
+            """
+            import type React from 'react';
+
+            export interface ImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+              src: string;
+              width?: number;
+              height?: number;
+              alt?: string;
+              priority?: boolean;
+              lazy?: boolean;
+            }
+
+            export declare const Image: React.ForwardRefExoticComponent<ImageProps & React.RefAttributes<HTMLImageElement>>;
+            export default Image;
+            """
+        ).strip()
+        + "\n"
+    )
+
+
+def _render_head_component_types() -> str:
+    return (
+        dedent(
+            """
+            import type React from 'react';
+
+            export interface HeadProps {
+              children?: React.ReactNode;
+            }
+
+            export declare const Head: React.ForwardRefExoticComponent<HeadProps & React.RefAttributes<HTMLDivElement>>;
+            export default Head;
+            """
+        ).strip()
+        + "\n"
+    )
+
+
+def _render_client_only_component_types() -> str:
+    return (
+        dedent(
+            """
+            import type React from 'react';
+
+            export interface ClientOnlyProps {
+              children: React.ReactNode;
+              fallback?: React.ReactNode;
+            }
+
+            export declare const ClientOnly: React.ForwardRefExoticComponent<ClientOnlyProps & React.RefAttributes<HTMLDivElement>>;
+            export default ClientOnly;
             """
         ).strip()
         + "\n"

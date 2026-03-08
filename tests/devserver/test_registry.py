@@ -205,3 +205,76 @@ def test_load_page_metadata_defaults_head_when_missing(tmp_path: Path) -> None:
 
     assert metadata is not None
     assert metadata.head_elements == ()
+
+
+def test_find_layout_head_jsx_blocks_no_layout(project: DevServerSettings) -> None:
+    """Test that empty tuple is returned when no layout exists."""
+    from pyxle.devserver.registry import find_layout_head_jsx_blocks
+
+    build_once(project)
+
+    # A page at root with no layout.pyx
+    blocks = find_layout_head_jsx_blocks(project, Path("index.pyx"))
+    assert blocks == ()
+
+
+def test_find_layout_head_jsx_blocks_root_layout(project: DevServerSettings) -> None:
+    """Test finding head blocks from root layout.pyx."""
+    from pyxle.devserver.registry import find_layout_head_jsx_blocks
+
+    # Write a layout.pyx at the root
+    write_file(
+        project.pages_dir / "layout.pyx",
+        """\n\nHEAD = "<meta name='viewport' content='width=device-width'/>"\n\nimport React from 'react';\n\nexport default function Layout({ children }) {\n    return <div>{children}</div>;\n}\n<Head>\n<title>Layout Title</title>\n</Head>\n""",
+    )
+
+    build_once(project)
+    blocks = find_layout_head_jsx_blocks(project, Path("index.pyx"))
+    assert len(blocks) > 0
+    assert any("<title>Layout Title</title>" in block for block in blocks)
+
+
+def test_find_layout_head_jsx_blocks_nested_layout(project: DevServerSettings) -> None:
+    """Test finding head blocks from nested layout.pyx."""
+    from pyxle.devserver.registry import find_layout_head_jsx_blocks
+
+    # Write a nested layout
+    write_file(
+        project.pages_dir / "posts" / "layout.pyx",
+        """\n\nimport React from 'react';\n\nexport default function PostsLayout({ children }) {\n    return <div>{children}</div>;\n}\n<Head>\n<meta name='posts-section' content='true'/>\n</Head>\n""",
+    )
+
+    build_once(project)
+    
+    # Page in the posts directory should find the posts layout
+    blocks = find_layout_head_jsx_blocks(project, Path("posts/[id].pyx"))
+    assert len(blocks) > 0
+    assert any("posts-section" in block for block in blocks)
+
+
+def test_find_layout_head_jsx_blocks_layout_hierarchy(project: DevServerSettings) -> None:
+    """Test that layout hierarchy is respected (parent and nested layouts)."""
+    from pyxle.devserver.registry import find_layout_head_jsx_blocks
+
+    # Write root layout
+    write_file(
+        project.pages_dir / "layout.pyx",
+        """\n\nimport React from 'react';\n\nexport default function RootLayout({ children }) {\n    return <html>{children}</html>;\n}\n<Head>\n<meta name='root' content='true'/>\n</Head>\n""",
+    )
+
+    # Write nested layout
+    write_file(
+        project.pages_dir / "posts" / "layout.pyx",
+        """\n\nimport React from 'react';\n\nexport default function PostsLayout({ children }) {\n    return <section>{children}</section>;\n}\n<Head>\n<meta name='posts' content='true'/>\n</Head>\n""",
+    )
+
+    build_once(project)
+    
+    # Page in posts directory should find both layouts
+    blocks = find_layout_head_jsx_blocks(project, Path("posts/[id].pyx"))
+    assert len(blocks) >= 2
+    # Should have both meta tags
+    all_blocks = " ".join(blocks)
+    assert "root" in all_blocks
+    assert "posts" in all_blocks
+

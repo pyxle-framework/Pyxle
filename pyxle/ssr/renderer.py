@@ -31,6 +31,8 @@ class RenderResult:
 
     html: str
     inline_styles: tuple[InlineStyleFragment, ...] = ()
+    head_elements: tuple[str, ...] = ()
+
 
 
 RenderOutput = RenderResult | str
@@ -146,8 +148,9 @@ class _NodeComponentRuntime:
             raise ComponentRenderError("SSR runtime returned malformed HTML payload")
 
         inline_styles = _parse_inline_styles(payload.get("styles"))
+        head_elements = _parse_head_elements(payload.get("headElements"))
 
-        return RenderResult(html=html, inline_styles=inline_styles)
+        return RenderResult(html=html, inline_styles=inline_styles, head_elements=head_elements)
 
 
 def _parse_runtime_output(raw: str) -> dict[str, Any]:
@@ -237,6 +240,18 @@ def _parse_inline_styles(raw: Any) -> tuple[InlineStyleFragment, ...]:
             )
         )
     return tuple(fragments)
+
+
+def _parse_head_elements(raw: Any) -> tuple[str, ...]:
+    """Parse head elements extracted from React components during SSR."""
+    if not isinstance(raw, list):
+        return ()
+    
+    elements: list[str] = []
+    for entry in raw:
+        if isinstance(entry, str) and entry.strip():
+            elements.append(entry.strip())
+    return tuple(elements)
 
 
 __all__ = [

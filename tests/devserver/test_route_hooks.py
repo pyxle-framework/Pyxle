@@ -81,3 +81,32 @@ def test_wrap_with_route_hooks_runs_chain_in_order():
 
     asyncio.run(_run())
     assert order == ["first:/", "second:page"]
+
+
+def test_load_route_hooks_supports_lifecycle_classes():
+    hooks = load_route_hooks(
+        ["tests.devserver.sample_middlewares:LifecycleRecordingHook"]
+    )
+
+    assert len(hooks) == 1
+
+    async def handler(request):
+        return PlainTextResponse("ok")
+
+    context = RouteContext(
+        target="page",
+        path="/",
+        source_relative_path=Path("index.pyx"),
+        source_absolute_path=Path("/tmp/index.pyx"),
+        module_key="pyxle.server.pages.index",
+        content_hash="abc",
+    )
+
+    async def _run():
+        wrapped = wrap_with_route_hooks(handler, hooks=hooks, context=context)
+        request = _make_request()
+        response = await wrapped(request)
+        assert response.status_code == 200
+        assert getattr(request.state, "hook_markers", []) == ["pre", "post"]
+
+    asyncio.run(_run())

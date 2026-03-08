@@ -3,6 +3,9 @@ from __future__ import annotations
 from starlette.middleware import Middleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
+from starlette.responses import PlainTextResponse
+
+from pyxle.devserver.route_hooks import RouteContext, RouteHook
 
 
 class HeaderCaptureMiddleware(BaseHTTPMiddleware):
@@ -14,6 +17,16 @@ class HeaderCaptureMiddleware(BaseHTTPMiddleware):
         if value:
             response.headers["x-auth-token"] = value
         return response
+
+
+class SimpleAsgiMiddleware:
+    """Minimal ASGI middleware implemented without Starlette helpers."""
+
+    def __init__(self, app):
+        self._app = app
+
+    async def __call__(self, scope, receive, send):
+        return await self._app(scope, receive, send)
 
 
 def create_rate_limit_middleware() -> Middleware:
@@ -65,3 +78,19 @@ def build_target_hook():
 
 def invalid_route_hook_factory():
     return "not-an-async-hook"
+
+
+class LifecycleRecordingHook(RouteHook):
+    async def on_pre_call(self, request: Request, context: RouteContext) -> None:
+        markers = getattr(request.state, "hook_markers", [])
+        markers = list(markers)
+        markers.append("pre")
+        request.state.hook_markers = markers
+
+    async def on_post_call(
+        self, request: Request, response: PlainTextResponse, context: RouteContext
+    ) -> None:
+        markers = getattr(request.state, "hook_markers", [])
+        markers = list(markers)
+        markers.append("post")
+        request.state.hook_markers = markers

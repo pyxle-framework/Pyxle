@@ -37,7 +37,7 @@ from .route_hooks import (
     DEFAULT_API_POLICIES,
     DEFAULT_PAGE_POLICIES,
     RouteContext,
-    RouteHook,
+    RouteHookCallable,
     RouteHookError,
     load_route_hooks,
     wrap_with_route_hooks,
@@ -161,7 +161,7 @@ class StaticAssetsMiddleware:
 def build_api_router(
     routes: Iterable[ApiRoute],
     *,
-    route_hooks: Sequence[RouteHook] | None = None,
+    route_hooks: Sequence[RouteHookCallable] | None = None,
 ) -> Router:
     """Create a Starlette ``Router`` populated from compiled API artifacts."""
 
@@ -244,7 +244,7 @@ def build_page_router(
     settings: DevServerSettings,
     renderer: ComponentRenderer,
     overlay: OverlayManager | None = None,
-    route_hooks: Sequence[RouteHook] | None = None,
+    route_hooks: Sequence[RouteHookCallable] | None = None,
 ) -> Router:
     """Create a router serving compiled pages via server-side rendering."""
 

@@ -45,6 +45,9 @@ class PyxParseResult:
     jsx_line_numbers: Sequence[int]
     head_elements: tuple[str, ...]
     head_is_dynamic: bool
+    script_declarations: tuple[dict, ...] = ()
+    image_declarations: tuple[dict, ...] = ()
+    head_jsx_blocks: tuple[str, ...] = ()
 
 
 @dataclass(slots=True)
@@ -113,6 +116,9 @@ class PyxParser:
             tree,
             python_line_numbers,
         )
+        script_declarations = self._detect_script_declarations(jsx_code)
+        image_declarations = self._detect_image_declarations(jsx_code)
+        head_jsx_blocks = self._detect_head_jsx_blocks(jsx_code)
 
         return PyxParseResult(
             python_code=python_code,
@@ -122,6 +128,9 @@ class PyxParser:
             jsx_line_numbers=tuple(jsx_line_numbers),
             head_elements=head_elements,
             head_is_dynamic=head_is_dynamic,
+            script_declarations=script_declarations,
+            image_declarations=image_declarations,
+            head_jsx_blocks=head_jsx_blocks,
         )
 
     def _build_document(self, lines: Sequence[str]) -> _DocumentNode:
@@ -251,8 +260,13 @@ class PyxParser:
         idx: int,
         expect_indent: bool,
         allow_unexpected_indent: bool,
+        string_state: _StringTracker | None = None,
     ) -> bool:
         if not stripped:
+            return expect_indent
+
+        # Skip indentation validation when inside a multi-line string
+        if string_state is not None and string_state.triple:
             return expect_indent
 
         current = indent_stack[-1]
@@ -469,6 +483,53 @@ class PyxParser:
 
         return tuple(elements), head_is_dynamic
 
+    def _detect_script_declarations(self, jsx_code: str) -> tuple[dict, ...]:
+        """Extract <Script src=... strategy=... /> declarations from JSX using Babel AST."""
+        from .jsx_parser import parse_jsx_components
+
+        result = parse_jsx_components(jsx_code, target_components={"Script"})
+        if result.error:
+            # Fallback to empty tuple if JSX parsing fails
+            return ()
+
+        scripts: list[dict] = []
+        for component in result.components:
+            if component.name == "Script" and component.props:
+                scripts.append(component.props)
+        return tuple(scripts)
+
+    def _detect_image_declarations(self, jsx_code: str) -> tuple[dict, ...]:
+        """Extract <Image src=... width=... height=... /> declarations from JSX using Babel AST."""
+        from .jsx_parser import parse_jsx_components
+
+        result = parse_jsx_components(jsx_code, target_components={"Image"})
+        if result.error:
+            # Fallback to empty tuple if JSX parsing fails
+            return ()
+
+        images: list[dict] = []
+        for component in result.components:
+            if component.name == "Image" and component.props:
+                images.append(component.props)
+        return tuple(images)
+
+    def _detect_head_jsx_blocks(self, jsx_code: str) -> tuple[str, ...]:
+        """Extract <Head>...</Head> blocks from JSX using Babel AST."""
+        from .jsx_parser import parse_jsx_components
+
+        result = parse_jsx_components(jsx_code, target_components={"Head"})
+        if result.error:
+            # Fallback to empty tuple if JSX parsing fails
+            return ()
+
+        blocks: list[str] = []
+        for component in result.components:
+            if component.name == "Head" and component.children:
+                content = component.children.strip()
+                if content:
+                    blocks.append(content)
+        return tuple(blocks)
+
     def _extract_head_literal(self, value: ast.AST, line: int | None) -> list[str] | None:
         """Return literal HEAD entries or ``None`` when the assignment is dynamic."""
 
@@ -533,8 +594,14 @@ class PyxParser:
                     continue
 
             if char in ("'", '"'):
-                tracker = _StringTracker(delimiter=char, triple=False)
-                idx, string_state = self._consume_python_string(line, idx + 1, tracker)
+                # Check for triple-quoted strings first
+                if line.startswith(char * 3, idx):
+                    tracker = _StringTracker(delimiter=char * 3, triple=True)
+                    string_state = tracker
+                    idx += 3
+                else:
+                    tracker = _StringTracker(delimiter=char, triple=False)
+                    idx, string_state = self._consume_python_string(line, idx + 1, tracker)
                 continue
 
             if char in "([{":
@@ -668,6 +735,7 @@ class _PythonState:
                 or self.bracket_depth
                 or self.brace_depth
             ),
+            self.string_state,
         )
         (
             self.string_state,

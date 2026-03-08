@@ -32,7 +32,7 @@ Pyxle reads this file at startup (via `pyxle.config.load_config`) to configure d
 | `starlette.host/port` | string/int | Bind address for Starlette (`pyxle dev` + `pyxle serve`). |
 | `vite.host/port` | string/int | Where Vite runs (dev only). |
 | `debug` | bool | Enables overlay, Vite proxy, and verbose logging. Forced to `False` during `pyxle build/serve`. |
-| `middleware` | string[] | Dotted paths to callables returning `starlette.middleware.Middleware`. |
+| `middleware` | string[] | Dotted paths to middleware specs—callables returning `starlette.middleware.Middleware`, ASGI middleware classes, or pre-built `Middleware` instances (see [custom middleware](../data/middleware-hooks.md)). |
 | `routeMiddleware.pages/apis` | string[] | Dotted paths to route hook callables (see [custom middleware](../data/middleware-hooks.md)). |
 | `styling.globalStyles` | string[] | Paths to CSS files copied + watched globally. |
 | `styling.globalScripts` | string[] | Paths to JS files copied + watched globally. |

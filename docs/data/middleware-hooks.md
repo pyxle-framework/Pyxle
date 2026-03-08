@@ -2,7 +2,7 @@
 
 Pyxle lets you extend both the Starlette middleware stack and per-route behaviour without forking the dev server.
 
-## Global middleware (`pyxle.config.json`)
+-## Global middleware (`pyxle.config.json`)
 
 ```json
 {
@@ -14,7 +14,10 @@ Pyxle lets you extend both the Starlette middleware stack and per-route behaviou
 }
 ```
 
-- `middleware` entries should point to callables returning `starlette.middleware.Middleware` objects.
+- `middleware` entries should point to dotted paths that resolve to middleware specs. Supported forms include:
+  - callables returning `starlette.middleware.Middleware` objects or `(MiddlewareClass, <options>)` tuples,
+  - ASGI middleware classes (typically `BaseHTTPMiddleware` subclasses or any class accepting `(app, **kwargs)`), and
+  - pre-built `Middleware` instances when configuration is captured at import time.
 - Page/API route middleware use the same format but only wrap their respective routers.
 - The loader in `pyxle/devserver/middleware.py` resolves dotted import strings, validates callables, and raises `MiddlewareHookError` when something cannot be imported.
 
@@ -24,6 +27,7 @@ For more targeted logic (timing, auth, custom headers) use route hooks.
 
 ```python
 # middlewares/telemetry.py
+import time
 from pyxle.devserver.route_hooks import RouteHook, RouteContext
 
 class LogDuration(RouteHook):
@@ -34,6 +38,8 @@ class LogDuration(RouteHook):
         elapsed = (time.perf_counter_ns() - request.state.start_ns) / 1e6
         print(f"{context.path} took {elapsed:.2f}ms")
 ```
+
+`RouteHook` provides lifecycle helpers (`on_pre_call`, `on_post_call`, `on_error`) so the framework automatically calls the right callbacks before and after the handler when the hook is registered. You can also register async functions that match `(context, request, call_next)` or callables that return them.
 
 Add the dotted path to `routeMiddleware.pages` or `.apis`. Hooks run in this order:
 

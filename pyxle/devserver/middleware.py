@@ -53,13 +53,12 @@ def _coerce_to_middleware(value: object, spec: str) -> Middleware | None:
     if isinstance(value, Middleware):
         return value
 
-    if inspect.isclass(value) and issubclass(value, BaseHTTPMiddleware):
+    if inspect.isclass(value):
         return Middleware(value)
 
     if callable(value):  # factory returning middleware or tuple
         produced = value()
         return _coerce_to_middleware(produced, spec)
-
     if isinstance(value, tuple) and len(value) == 2:
         candidate, options = value
         if (
