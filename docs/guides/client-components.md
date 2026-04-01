@@ -1,0 +1,146 @@
+# Client Components
+
+Pyxle provides built-in React components and hooks importable from `pyxle/client`.
+
+```jsx
+import { Head, Script, Image, ClientOnly, Form, useAction, Link, navigate, prefetch } from 'pyxle/client';
+```
+
+## `<Head>`
+
+Manages document `<head>` elements. See [Head Management](head-management.md) for full details.
+
+```jsx
+<Head>
+  <title>My Page</title>
+  <meta name="description" content="Page description" />
+</Head>
+```
+
+Renders nothing in the DOM. During SSR, its children are extracted and merged into the document head.
+
+## `<Script>`
+
+Loads external scripts with configurable loading strategies:
+
+```jsx
+<Script src="https://analytics.example.com/script.js" strategy="afterInteractive" />
+```
+
+### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `src` | `string` | (required) | Script URL |
+| `strategy` | `string` | `"afterInteractive"` | Loading strategy |
+| `async` | `boolean` | `false` | Add `async` attribute |
+| `defer` | `boolean` | `false` | Add `defer` attribute |
+| `onLoad` | `function` | -- | Called when script loads |
+| `onError` | `function` | -- | Called on load failure |
+
+### Loading strategies
+
+| Strategy | When it loads |
+|----------|--------------|
+| `"beforeInteractive"` | In `<head>` before hydration (blocking) |
+| `"afterInteractive"` | After hydration completes (default) |
+| `"lazyOnload"` | During browser idle time |
+
+## `<Image>`
+
+Renders an `<img>` tag with automatic lazy loading:
+
+```jsx
+<Image src="/photos/hero.jpg" alt="Hero image" width={800} height={600} />
+```
+
+### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `src` | `string` | (required) | Image URL |
+| `alt` | `string` | `""` | Alt text |
+| `width` | `number` | -- | Image width |
+| `height` | `number` | -- | Image height |
+| `priority` | `boolean` | `false` | Eager load (above the fold) |
+| `lazy` | `boolean` | `true` | Lazy load (below the fold) |
+
+When `priority` is `true`, the image uses `loading="eager"`. Otherwise, it uses `loading="lazy"`.
+
+## `<ClientOnly>`
+
+Renders children only on the client, after hydration. Useful for components that depend on browser APIs:
+
+```jsx
+<ClientOnly fallback={<p>Loading map...</p>}>
+  <InteractiveMap />
+</ClientOnly>
+```
+
+### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `children` | `ReactNode` | -- | Content to render on the client |
+| `fallback` | `ReactNode` | `null` | Shown during SSR and before hydration |
+
+This prevents hydration mismatches for components that render differently on server vs client.
+
+## `<Form>`
+
+Progressive-enhancement form component for calling server actions. See [Server Actions](../core-concepts/server-actions.md) for full details.
+
+```jsx
+<Form action="create_post" onSuccess={(data) => console.log(data)}>
+  <input name="title" />
+  <button type="submit">Create</button>
+</Form>
+```
+
+## `useAction`
+
+Hook for calling server actions programmatically. See [Server Actions](../core-concepts/server-actions.md) for full details.
+
+```jsx
+const deletePost = useAction('delete_post');
+await deletePost({ id: 42 });
+```
+
+## `<Link>`
+
+Client-side navigation link. Prevents full page reloads:
+
+```jsx
+import { Link } from 'pyxle/client';
+
+<Link href="/about">About</Link>
+```
+
+## `navigate(path)`
+
+Programmatic client-side navigation:
+
+```jsx
+import { navigate } from 'pyxle/client';
+
+function handleClick() {
+  navigate('/dashboard');
+}
+```
+
+## `prefetch(path)`
+
+Prefetch a page's data and assets before navigation:
+
+```jsx
+import { prefetch } from 'pyxle/client';
+
+<a href="/dashboard" onMouseEnter={() => prefetch('/dashboard')}>
+  Dashboard
+</a>
+```
+
+## Next steps
+
+- Protect your app: [Security](security.md)
+- Deploy to production: [Deployment](deployment.md)

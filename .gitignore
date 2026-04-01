@@ -1,0 +1,59 @@
+# Pyxle build artifacts
+.pyxle-node-cache/
+.pyxle-build/
+.pyxle/.lang-virtual/
+
+# Node
+node_modules/
+
+# Python bytecode
+__pycache__/
+*.py[codz]
+*$py.class
+
+# Distribution / packaging
+build/
+!docs/build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+
+# Test / coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.pytest_cache/
+coverage.xml
+*.cover
+*.py.cover
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Internal docs (kept locally, not published)
+PYXLE_AUDIT.md
+ROADMAP.md
+.github/instructions/

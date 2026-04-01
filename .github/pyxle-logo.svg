@@ -1,0 +1,19 @@
+<svg width="180" height="48" viewBox="0 0 180 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="pyxle-mark-a" x1="8" y1="5" x2="40" y2="43" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6ee7b7" />
+      <stop offset="0.5" stop-color="#34d399" />
+      <stop offset="1" stop-color="#059669" />
+    </linearGradient>
+  </defs>
+  <path
+    d="M14 40 V8 H28 Q38 8 38 18 Q38 28 28 28 H14"
+    stroke="url(#pyxle-mark-a)"
+    stroke-width="3.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+  />
+  <circle cx="28" cy="18" r="2.8" fill="#6ee7b7" />
+  <text x="52" y="34" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-weight="700" font-size="30" fill="#6ee7b7" letter-spacing="0.01em">Pyxle</text>
+</svg>

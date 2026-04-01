@@ -1,0 +1,229 @@
+# Client API Reference
+
+All client-side components and hooks are importable from `pyxle/client`:
+
+```jsx
+import {
+  Head, Script, Image, ClientOnly,
+  Form, useAction,
+  Link, navigate, prefetch
+} from 'pyxle/client';
+```
+
+---
+
+## Components
+
+### `<Head>`
+
+Manages document `<head>` elements during server-side rendering.
+
+```jsx
+<Head>
+  <title>Page Title</title>
+  <meta name="description" content="Description" />
+</Head>
+```
+
+**Props:** Children only (standard React children).
+
+**Behaviour:**
+- Renders `null` in the DOM
+- During SSR, extracts children markup and registers head elements
+- Elements are merged and deduplicated with the `HEAD` Python variable and layout head blocks
+- Can be used in any component (page, layout, or nested)
+
+---
+
+### `<Script>`
+
+Loads external scripts with configurable loading strategies.
+
+```jsx
+<Script src="https://analytics.example.com/script.js" strategy="afterInteractive" />
+```
+
+**Props:**
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `src` | `string` | (required) | Script URL |
+| `strategy` | `string` | `"afterInteractive"` | When to load the script |
+| `async` | `boolean` | `false` | HTML `async` attribute |
+| `defer` | `boolean` | `false` | HTML `defer` attribute |
+| `onLoad` | `() => void` | -- | Callback on successful load |
+| `onError` | `() => void` | -- | Callback on load failure |
+
+**Strategies:**
+
+| Value | Description |
+|-------|-------------|
+| `"beforeInteractive"` | Injected in `<head>` before hydration (render-blocking) |
+| `"afterInteractive"` | Loaded after React hydration (default) |
+| `"lazyOnload"` | Loaded during browser idle time |
+
+**Behaviour:** Renders `null`. The SSR pipeline extracts `<Script>` declarations and handles loading according to the strategy.
+
+---
+
+### `<Image>`
+
+Renders an `<img>` tag with automatic lazy loading.
+
+```jsx
+<Image src="/hero.jpg" alt="Hero" width={1200} height={630} />
+```
+
+**Props:**
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `src` | `string` | (required) | Image source URL |
+| `alt` | `string` | `""` | Alt text for accessibility |
+| `width` | `number` | -- | Image width in pixels |
+| `height` | `number` | -- | Image height in pixels |
+| `priority` | `boolean` | `false` | Eager loading (above-the-fold images) |
+| `lazy` | `boolean` | `true` | Lazy loading (below-the-fold images) |
+
+**Behaviour:** Renders a standard `<img>` with `loading="eager"` when `priority` is true, `loading="lazy"` otherwise. All additional props are forwarded to the `<img>` element.
+
+---
+
+### `<ClientOnly>`
+
+Renders children only on the client after hydration.
+
+```jsx
+<ClientOnly fallback={<p>Loading...</p>}>
+  <MapWidget />
+</ClientOnly>
+```
+
+**Props:**
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `children` | `ReactNode` | -- | Content to render on the client |
+| `fallback` | `ReactNode` | `null` | Placeholder shown during SSR |
+
+**Behaviour:** Returns `fallback` during SSR and on first client render. After `useEffect` fires (hydration complete), switches to rendering `children`. Prevents hydration mismatch for browser-only content.
+
+---
+
+### `<Form>`
+
+Progressive-enhancement form component for calling server actions.
+
+```jsx
+<Form action="create_post" onSuccess={(data) => alert(`Created: ${data.id}`)}>
+  <input name="title" required />
+  <button type="submit">Create</button>
+</Form>
+```
+
+**Props:**
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `action` | `string` | (required) | Name of the `@action` function |
+| `pagePath` | `string` | current page | Page where the action is defined |
+| `onSuccess` | `(data) => void` | -- | Called with response data on success |
+| `onError` | `(message) => void` | -- | Called with error message on failure |
+| `resetOnSuccess` | `boolean` | `true` | Reset form fields after success |
+| `children` | `ReactNode` | -- | Form contents |
+
+**Behaviour:**
+- With JavaScript: intercepts submit, serialises form data to JSON, POSTs to the action endpoint
+- Without JavaScript: falls back to a standard HTML form POST
+- Displays inline error messages on failure
+- Automatically resolves the action endpoint URL
+- All additional props are forwarded to the `<form>` element
+
+---
+
+### `<Link>`
+
+Client-side navigation link that prevents full page reloads.
+
+```jsx
+<Link href="/about">About Us</Link>
+```
+
+Imported from `pyxle/client`. Renders an `<a>` tag that intercepts clicks for client-side navigation.
+
+---
+
+## Hooks
+
+### `useAction(actionName, options?)`
+
+Hook for calling server actions programmatically.
+
+```jsx
+const deleteItem = useAction('delete_item');
+
+async function handleDelete(id) {
+  const result = await deleteItem({ id });
+  if (result.ok) {
+    console.log('Deleted');
+  }
+}
+```
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `actionName` | `string` | Name of the `@action` function |
+| `options.pagePath` | `string?` | Page where the action is defined (defaults to current page) |
+| `options.onMutate` | `(payload) => void` | Called immediately before the request (for optimistic updates) |
+
+**Returns:** An async function with attached state properties.
+
+**Return value properties:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `.pending` | `boolean` | `true` while request is in flight |
+| `.error` | `string \| null` | Error message on failure |
+| `.data` | `object \| null` | Last successful response data |
+
+**Calling the returned function:**
+
+```jsx
+const result = await actionFn(payload);
+// result.ok: boolean
+// result.error?: string
+// result.*: response data fields
+```
+
+**Behaviour:**
+- New calls abort previous in-flight requests
+- State resets on each new call
+- `onMutate` fires synchronously before the fetch (use for optimistic UI)
+
+---
+
+## Functions
+
+### `navigate(path)`
+
+Trigger client-side navigation programmatically.
+
+```jsx
+import { navigate } from 'pyxle/client';
+
+navigate('/dashboard');
+```
+
+### `prefetch(path)`
+
+Prefetch a page's data and assets.
+
+```jsx
+import { prefetch } from 'pyxle/client';
+
+<button onMouseEnter={() => prefetch('/dashboard')}>
+  Go to Dashboard
+</button>
+```

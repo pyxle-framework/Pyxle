@@ -1,0 +1,14 @@
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="pyxle-mark-a" x1="12" y1="14" x2="84" y2="82" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#22d3ee" />
+      <stop offset="1" stop-color="#0ea5e9" />
+    </linearGradient>
+    <linearGradient id="pyxle-mark-b" x1="18" y1="80" x2="82" y2="16" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0f172a" stop-opacity="0.85" />
+      <stop offset="1" stop-color="#334155" stop-opacity="0.95" />
+    </linearGradient>
+  </defs>
+  <path d="M20 16h16l12 16 12-16h16l-22 32 22 32H60L48 64 36 80H20l22-32z" stroke="url(#pyxle-mark-a)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="48" cy="48" r="6" fill="#fbbf24" />
+</svg>
