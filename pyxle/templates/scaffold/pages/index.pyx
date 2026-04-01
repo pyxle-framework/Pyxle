@@ -11,8 +11,11 @@ HEAD = """
 <link rel="icon" href="/favicon.ico" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/styles/tailwind.css" />
+<style>
+  body { font-family: 'Inter', sans-serif; }
+</style>
 <script>
 (function() {
         try {
@@ -31,7 +34,6 @@ HEAD = """
 </script>
 """
 
-
 @server
 async def load_home(request):
         now = datetime.now(tz=timezone.utc)
@@ -39,55 +41,55 @@ async def load_home(request):
         display_time = now.strftime("%H:%M:%S UTC")
         return {
                 "hero": {
-                        "eyebrow": "PYTHON ✕ REACT",
-                        "title": "Build like Next.js without leaving Python.",
-                        "tagline": "Pyxle keeps loaders and components together so you can ship full-stack features without wiring a separate API layer.",
+                        "eyebrow": "The Full-Stack Framework for Python",
+                        "title": "Build modern web apps with Python & React.",
+                        "tagline": "Pyxle seamlessly blends Python backends with React frontends. Forget writing separate APIs—just export your loader and write your components.",
                         "cta": {
-                                "label": "Read the docs",
+                                "label": "Start Building",
                                 "href": "https://pyxle.dev/docs",
                         },
                 },
                 "highlights": [
                         {
-                                "label": "Routes",
-                                "title": "File-based navigation",
-                                "summary": "Drop `.pyx` files under pages/ to create instant routes, dynamic segments, and layouts—no config required.",
+                                "label": "Routing",
+                                "title": "File-system Routing",
+                                "summary": "Intuitive directory structure. Just create .pyx files to define your routes, layouts, and dynamic segments.",
                         },
                         {
-                                "label": "Tooling",
-                                "title": "Vite + Tailwind",
-                                "summary": "Enjoy instant reloads, JSX transforms, and Tailwind classes without wiring the bundler yourself.",
+                                "label": "DX",
+                                "title": "Vite Powered",
+                                "summary": "Instant server start, lightning fast HMR, and optimized production builds powered by Vite and esbuild.",
                         },
                         {
                                 "label": "Data",
-                                "title": "Async loaders",
-                                "summary": "Fetch data with `@server` functions that run on Starlette, then hydrate the same props on the client.",
+                                "title": "Integrated Loaders",
+                                "summary": "Fetch data directly in Python and pass it to React with zero boilerplate. Fully typed and secure.",
                         },
                         {
-                                "label": "API",
-                                "title": "Shared helpers",
-                                "summary": "pages/api/*.py files share Python utilities with your loaders so modeling stays in one language.",
+                                "label": "Design",
+                                "title": "Tailwind CSS",
+                                "summary": "Utility-first styling out of the box. Build beautiful, responsive interfaces without leaving your JSX.",
                         },
                 ],
                 "commands": [
-                        {"label": "Scaffold", "command": "pyxle init my-app"},
-                        {"label": "Start dev server", "command": "pyxle dev"},
-                        {"label": "Call diagnostics", "command": "curl http://localhost:8000/api/pulse"},
+                        {"label": "Initialize a project", "command": "pyxle init my-app"},
+                        {"label": "Start the dev server", "command": "pyxle dev"},
+                        {"label": "Check API health", "command": "curl http://localhost:8000/api/pulse"},
                 ],
                 "resources": [
                         {
-                                "title": "Architecture",
-                                "description": "Understand how the CLI, compiler, and dev server fit together.",
-                                "href": "https://github.com/shivamsn97/pyxle/blob/main/architecture.md",
+                                "title": "Documentation",
+                                "description": "Explore the comprehensive guides and API references.",
+                                "href": "https://pyxle.dev/docs",
                         },
                         {
-                                "title": "Tailwind guide",
-                                "description": "Customize the Tailwind theme or wire your own PostCSS build when you're ready.",
-                                "href": "https://github.com/shivamsn97/pyxle/blob/main/docs/styling/tailwind.md",
+                                "title": "GitHub Repository",
+                                "description": "Star the project, report issues, or contribute to the source code.",
+                                "href": "https://github.com/shivamsn97/pyxle",
                         },
                         {
                                 "title": "Deployment",
-                                "description": "Use pyxle build + pyxle serve to ship the same page with hashed assets.",
+                                "description": "Learn how to deploy your Pyxle app to production seamlessly.",
                                 "href": "https://github.com/shivamsn97/pyxle/blob/main/docs/deployment/deployment.md",
                         },
                 ],
@@ -98,7 +100,6 @@ async def load_home(request):
                 },
         }
 
-
 import React, { useEffect, useState } from 'react';
 import { Link } from 'pyxle/client';
 
@@ -106,7 +107,7 @@ const THEME_KEY = 'pyxle-theme-preference';
 
 const resolvePreferredTheme = () => {
         if (typeof window === 'undefined') {
-                return 'light';
+                return 'dark'; // Default to dark for that devtool feel
         }
         const stored = window.localStorage.getItem(THEME_KEY);
         if (stored === 'dark' || stored === 'light') {
@@ -119,43 +120,36 @@ const ThemeToggle = ({ onToggle, theme }) => (
         <button
                 type="button"
                 onClick={onToggle}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200/70 bg-white text-slate-900 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                aria-label="Toggle color theme"
+                className="flex h-9 w-9 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 dark:border-gray-800 dark:bg-black dark:text-gray-400 dark:hover:bg-gray-900 dark:hover:text-gray-100"
+                aria-label="Toggle theme"
         >
                 {theme === 'dark' ? (
-                        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
-                                <path d="M21 12.79A9 9 0 0 1 11.21 3 7 7 0 1 0 21 12.79z" />
+                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                         </svg>
                 ) : (
-                        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-                                <circle cx="12" cy="12" r="4" />
-                                <path d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.4-6.4-1.4 1.4M6 18l-1.4 1.4M18 18l-1.4-1.4M7.4 7.4 6 6" />
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
                         </svg>
                 )}
         </button>
 );
 
 const StatCard = ({ label, value, hint }) => (
-        <div className="rounded-2xl border border-slate-100/80 bg-white/80 p-5 text-slate-900 shadow-md backdrop-blur dark:border-slate-800/80 dark:bg-slate-900/70 dark:text-slate-50">
-                <p className="text-xs uppercase tracking-[0.35em] text-slate-400 dark:text-slate-500">{label}</p>
-                <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{value}</p>
-                {hint && <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{hint}</p>}
+        <div className="flex flex-col justify-center rounded-xl border border-gray-200 bg-white p-5 transition-colors dark:border-gray-800 dark:bg-black">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{label}</p>
+                <div className="mt-2 flex items-baseline gap-2">
+                        <p className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">{value}</p>
+                        {hint && <span className="text-sm text-gray-500 dark:text-gray-400">{hint}</span>}
+                </div>
         </div>
 );
 
-const GRID_BACKGROUND_STYLE = {
-        backgroundImage:
-                "radial-gradient(circle at 50% 0%, rgba(94, 234, 212, 0.35), transparent 45%), " +
-                "radial-gradient(circle at 15% 40%, rgba(129, 140, 248, 0.35), transparent 40%), " +
-                "url('/branding/pyxle-grid.svg')",
-        backgroundSize: '100% 100%, 100% 100%, 320px 320px',
-};
-
 const Background = () => (
-        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-                <div className="absolute inset-0 opacity-70 mix-blend-screen dark:opacity-50" style={GRID_BACKGROUND_STYLE} />
-                <div className="absolute inset-0 bg-gradient-to-b from-white via-white/80 to-white opacity-80 dark:from-slate-950/90 dark:via-slate-950/60 dark:to-slate-950" />
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-100/30 via-transparent to-indigo-100/30 dark:from-cyan-500/10 dark:via-transparent dark:to-indigo-700/10" />
+        <div className="pointer-events-none absolute inset-0 -z-10 flex justify-center overflow-hidden">
+                <div className="absolute inset-0 bg-[url('/branding/pyxle-grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] dark:opacity-20 opacity-40"></div>
+                <div className="absolute top-0 h-[800px] w-[1200px] rounded-full bg-blue-500/10 blur-[100px] dark:bg-blue-600/10"></div>
+                <div className="absolute top-[-200px] h-[600px] w-[600px] rounded-full bg-cyan-500/10 blur-[100px] dark:bg-cyan-600/10"></div>
         </div>
 );
 
@@ -164,39 +158,32 @@ export const createSlots = () => slots;
 
 export default function Page({ data }) {
         const { hero, highlights, commands, resources, telemetry } = data;
-        const [theme, setTheme] = useState('light');
+        const [theme, setTheme] = useState('dark');
 
         useEffect(() => {
-                if (typeof window === 'undefined') {
-                        return undefined;
-                }
+                if (typeof window === 'undefined') return;
                 const media = window.matchMedia('(prefers-color-scheme: dark)');
 
-                const syncTheme = () => {
-                        setTheme(resolvePreferredTheme());
-                };
+                const syncTheme = () => setTheme(resolvePreferredTheme());
+                syncTheme();
 
                 const handleChange = (event) => {
-                        const stored = window.localStorage.getItem(THEME_KEY);
-                        if (!stored) {
+                        if (!window.localStorage.getItem(THEME_KEY)) {
                                 setTheme(event.matches ? 'dark' : 'light');
                         }
                 };
 
-                syncTheme();
-
                 if (typeof media.addEventListener === 'function') {
                         media.addEventListener('change', handleChange);
                         return () => media.removeEventListener('change', handleChange);
+                } else {
+                        media.addListener(handleChange);
+                        return () => media.removeListener(handleChange);
                 }
-                media.addListener(handleChange);
-                return () => media.removeListener(handleChange);
         }, []);
 
         useEffect(() => {
-                if (typeof document === 'undefined') {
-                        return;
-                }
+                if (typeof document === 'undefined') return;
                 const root = document.documentElement;
                 root.classList.toggle('dark', theme === 'dark');
                 root.dataset.theme = theme;
@@ -205,140 +192,134 @@ export default function Page({ data }) {
                 }
         }, [theme]);
 
-        const toggleTheme = () => setTheme((current) => (current === 'dark' ? 'light' : 'dark'));
-        const wordmarkSrc = theme === 'dark' ? '/branding/pyxle-wordmark-light.svg' : '/branding/pyxle-wordmark-dark.svg';
-
-        const heroActions = (
-                <div className="flex flex-wrap gap-3">
-                        <a
-                                href={hero.cta.href}
-                                className="inline-flex items-center justify-center rounded-full border border-cyan-300/60 bg-gradient-to-r from-cyan-400 to-blue-500 px-5 py-2 text-sm font-medium text-white shadow-lg shadow-cyan-500/30"
-                                target="_blank"
-                                rel="noreferrer"
-                        >
-                                {hero.cta.label}
-                        </a>
-                        <a
-                                href="https://pypi.org/project/pyxle/"
-                                className="inline-flex items-center justify-center rounded-full border border-slate-200/70 px-5 py-2 text-sm font-medium text-slate-900 transition hover:border-slate-900 dark:border-slate-700 dark:text-white"
-                                target="_blank"
-                                rel="noreferrer"
-                        >
-                                View on PyPI
-                        </a>
-                </div>
-        );
+        const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
 
         return (
-                <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-slate-50 via-white to-white text-slate-900 antialiased transition-colors dark:from-slate-950 dark:via-slate-950 dark:to-slate-950 dark:text-slate-50">
+                <div className="min-h-screen bg-white text-gray-900 selection:bg-blue-100 selection:text-blue-900 dark:bg-[#0a0a0a] dark:text-gray-50 dark:selection:bg-blue-900/50 dark:selection:text-blue-200">
                         <Background />
-                        <div className="relative mx-auto max-w-6xl px-6 py-10 sm:px-10 lg:px-12">
-                                        <header className="flex flex-col gap-6 rounded-3xl border border-white/70 bg-white/80 p-6 shadow-lg shadow-blue-500/5 backdrop-blur dark:border-slate-800/80 dark:bg-slate-900/70">
-                                                <div className="flex flex-wrap items-center justify-between gap-4">
-                                                        <div className="flex items-center gap-3">
-                                                                <img src="/branding/pyxle-mark.svg" alt="Pyxle mark" className="h-12 w-12" />
-                                                                <img src={wordmarkSrc} alt="Pyxle wordmark" className="h-6" />
-                                                        </div>
-                                                        <ThemeToggle theme={theme} onToggle={toggleTheme} />
-                                                </div>
-                                                <div>
-                                                        <p className="text-xs uppercase tracking-[0.35em] text-slate-400 dark:text-slate-500">{hero.eyebrow}</p>
-                                                        <h1 className="mt-3 text-3xl font-semibold leading-tight text-slate-900 dark:text-white sm:text-4xl">
-                                                                {hero.title}
-                                                        </h1>
-                                                        <p className="mt-3 text-base text-slate-600 dark:text-slate-300">{hero.tagline}</p>
-                                                </div>
-                                                {heroActions}
-                                        </header>
 
-                                        <section className="mt-10 grid gap-6 lg:grid-cols-[3fr,2fr]">
-                                                <div className="space-y-4">
-                                                        <div className="grid gap-4 md:grid-cols-2">
-                                                                {highlights.map((item) => (
-                                                                        <article
-                                                                                key={item.title}
-                                                                                className="rounded-2xl border border-slate-200/70 bg-white/80 p-5 shadow-md shadow-slate-900/5 backdrop-blur transition hover:-translate-y-0.5 dark:border-slate-800/70 dark:bg-slate-900/70"
-                                                                        >
-                                                                                <p className="text-xs uppercase tracking-[0.35em] text-slate-400 dark:text-slate-500">{item.label}</p>
-                                                                                <h2 className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">{item.title}</h2>
-                                                                                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{item.summary}</p>
-                                                                        </article>
-                                                                ))}
-                                                        </div>
-                                                </div>
-                                                <div className="rounded-[28px] border border-slate-200/80 bg-white/90 p-6 shadow-2xl shadow-blue-500/10 backdrop-blur dark:border-slate-800/80 dark:bg-slate-900/80">
-                                                        <div className="flex flex-col gap-4">
-                                                                <h3 className="text-sm uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500">Project snapshot</h3>
-                                                                <StatCard label="Pyxle" value={`v${telemetry.version}`} hint="server + client" />
-                                                                <StatCard label="Last refresh" value={telemetry.display_time} hint="UTC" />
-                                                                <Link
-                                                                        href="/api/pulse"
-                                                                        className="inline-flex items-center justify-center rounded-2xl border border-slate-200/80 px-4 py-3 text-sm font-medium text-slate-900 transition hover:border-slate-900 dark:border-slate-700 dark:text-white"
-                                                                >
-                                                                        View API pulse →
-                                                                </Link>
-                                                        </div>
-                                                </div>
-                                        </section>
+                        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+                                <nav className="flex items-center justify-between py-6">
+                                        <div className="flex items-center gap-2">
+                                                <img src="/branding/pyxle-mark.svg" alt="Pyxle" className="h-8 w-8" />
+                                                <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Pyxle</span>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                                <a href="https://github.com/shivamsn97/pyxle" className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors" target="_blank" rel="noreferrer">GitHub</a>
+                                                <a href="https://pyxle.dev/docs" className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors" target="_blank" rel="noreferrer">Docs</a>
+                                                <ThemeToggle theme={theme} onToggle={toggleTheme} />
+                                        </div>
+                                </nav>
 
-                                        <section className="mt-12 rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-lg shadow-slate-900/5 backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
-                                                <div className="flex flex-wrap items-center justify-between gap-4">
-                                                        <div>
-                                                                <p className="text-xs uppercase tracking-[0.35em] text-slate-400 dark:text-slate-500">Quick commands</p>
-                                                                <h2 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">Drop these into your terminal</h2>
-                                                        </div>
-                                                        <span className="rounded-full border border-slate-200/80 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300">
-                                                                Tailwind ready
-                                                        </span>
+                                <main className="pt-20 pb-16 sm:pt-32 sm:pb-24 lg:pb-32">
+                                        <div className="text-center flex flex-col items-center">
+                                                <div className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-600 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-400 mb-8">
+                                                        <span className="flex h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400 mr-2 animate-pulse"></span>
+                                                        {hero.eyebrow}
                                                 </div>
-                                                <div className="mt-6 grid gap-4 md:grid-cols-3">
-                                                        {commands.map((entry) => (
-                                                                <div
-                                                                        key={entry.command}
-                                                                        className="rounded-2xl border border-slate-200/70 bg-slate-900/5 p-4 font-mono text-sm text-slate-900 dark:border-slate-800/70 dark:bg-white/5 dark:text-slate-100"
-                                                                >
-                                                                        <p className="text-xs uppercase tracking-[0.35em] text-slate-400 dark:text-slate-500">{entry.label}</p>
-                                                                        <code className="mt-2 block text-base">{entry.command}</code>
+                                                <h1 className="mx-auto max-w-4xl text-5xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-7xl">
+                                                        Build like <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 dark:from-blue-400 dark:to-cyan-300">Next.js</span><br className="hidden sm:block" /> without leaving Python.
+                                                </h1>
+                                                <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-gray-600 dark:text-gray-400">
+                                                        {hero.tagline}
+                                                </p>
+                                                <div className="mt-10 flex items-center justify-center gap-x-6">
+                                                        <a href={hero.cta.href} className="rounded-md bg-gray-900 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200 transition-all">
+                                                                {hero.cta.label}
+                                                        </a>
+                                                        <a href="https://github.com/shivamsn97/pyxle" className="text-sm font-semibold leading-6 text-gray-900 dark:text-white hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                                                                View on GitHub <span aria-hidden="true">&#8594;</span>
+                                                        </a>
+                                                </div>
+                                        </div>
+
+                                        <div className="mt-24 sm:mt-32">
+                                                <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+                                                        {highlights.map((item) => (
+                                                                <div key={item.title} className="group relative rounded-2xl border border-gray-200 bg-white/50 p-6 hover:bg-gray-50/50 dark:border-gray-800 dark:bg-gray-900/20 dark:hover:bg-gray-900/50 transition-colors">
+                                                                        <div className="mb-4 inline-flex h-8 items-center rounded-md bg-gray-100 px-3 text-xs font-medium text-gray-800 dark:bg-gray-800 dark:text-gray-200">
+                                                                                {item.label}
+                                                                        </div>
+                                                                        <h3 className="text-base font-semibold text-gray-900 dark:text-white">{item.title}</h3>
+                                                                        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{item.summary}</p>
                                                                 </div>
                                                         ))}
                                                 </div>
-                                        </section>
+                                        </div>
 
-                                        <section className="mt-12">
-                                                <div className="rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-lg shadow-slate-900/5 backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
-                                                        <div className="flex flex-wrap items-center justify-between gap-4">
-                                                                <div>
-                                                                        <p className="text-xs uppercase tracking-[0.35em] text-slate-400 dark:text-slate-500">Keep exploring</p>
-                                                                        <h2 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">Resources you’ll want next</h2>
-                                                                </div>
-                                                                <a
-                                                                        href="https://github.com/shivamsn97/pyxle"
-                                                                        className="inline-flex items-center justify-center rounded-full border border-slate-200/80 px-4 py-2 text-sm font-medium text-slate-900 transition hover:border-slate-900 dark:border-slate-700 dark:text-white"
-                                                                        target="_blank"
-                                                                        rel="noreferrer"
-                                                                >
-                                                                        GitHub →
-                                                                </a>
+                                        <div className="mt-24 grid gap-8 lg:grid-cols-2 sm:mt-32">
+                                                <div className="flex flex-col justify-center">
+                                                        <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
+                                                                Developer Experience First
+                                                        </h2>
+                                                        <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
+                                                                Pyxle is designed to make you productive from day one. Enjoy a highly optimized development environment with tools you already know and love.
+                                                        </p>
+
+                                                        <div className="mt-8 grid grid-cols-2 gap-4">
+                                                                <StatCard label="Pyxle CLI" value={`v${telemetry.version}`} hint="latest" />
+                                                                <StatCard label="Live Pulse" value={telemetry.display_time} />
                                                         </div>
-                                                        <div className="mt-6 grid gap-4 md:grid-cols-3">
-                                                                {resources.map((resource) => (
-                                                                        <article
-                                                                                key={resource.href}
-                                                                                className="rounded-2xl border border-slate-200/70 bg-gradient-to-br from-white to-slate-50/60 p-5 shadow-inner shadow-white/40 dark:border-slate-800/70 dark:from-slate-900 dark:to-slate-900/60"
-                                                                        >
-                                                                                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{resource.title}</h3>
-                                                                                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{resource.description}</p>
-                                                                                <a
-                                                                                        href={resource.href}
-                                                                                        className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-cyan-600 hover:text-cyan-500 dark:text-cyan-300"
-                                                                                >
-                                                                                        Read more →
-                                                                                </a>
-                                                                        </article>
+                                                </div>
+
+                                                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-2 dark:border-gray-800 dark:bg-[#111]">
+                                                        <div className="flex items-center gap-2 border-b border-gray-200 px-4 py-3 dark:border-gray-800">
+                                                                <div className="flex gap-1.5">
+                                                                        <div className="h-3 w-3 rounded-full bg-red-400/80 dark:bg-red-500/80"></div>
+                                                                        <div className="h-3 w-3 rounded-full bg-amber-400/80 dark:bg-amber-500/80"></div>
+                                                                        <div className="h-3 w-3 rounded-full bg-green-400/80 dark:bg-green-500/80"></div>
+                                                                </div>
+                                                                <div className="ml-4 text-xs font-medium text-gray-500">Terminal</div>
+                                                        </div>
+                                                        <div className="p-4 font-mono text-sm">
+                                                                {commands.map((cmd, idx) => (
+                                                                        <div key={idx} className="mb-4 last:mb-0">
+                                                                                <div className="text-gray-400 dark:text-gray-500"># {cmd.label}</div>
+                                                                                <div className="flex items-center mt-1 text-gray-900 dark:text-gray-300">
+                                                                                        <span className="mr-2 text-blue-500">$</span>
+                                                                                        <span>{cmd.command}</span>
+                                                                                </div>
+                                                                        </div>
                                                                 ))}
                                                         </div>
                                                 </div>
-                                        </section>
+                                        </div>
+
+                                        <div className="mt-24 sm:mt-32">
+                                                <div className="flex items-center justify-between mb-8">
+                                                        <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+                                                                Resources & Documentation
+                                                        </h2>
+                                                        <a href="https://pyxle.dev/docs" className="text-sm font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">
+                                                                View all resources <span aria-hidden="true">&#8594;</span>
+                                                        </a>
+                                                </div>
+                                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                                        {resources.map((res) => (
+                                                                <a key={res.href} href={res.href} className="group relative rounded-xl border border-gray-200 bg-white p-6 hover:border-gray-300 dark:border-gray-800 dark:bg-[#111] dark:hover:border-gray-700 transition-colors">
+                                                                        <h3 className="text-base font-semibold text-gray-900 group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400 transition-colors">
+                                                                                {res.title}
+                                                                        </h3>
+                                                                        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                                                                                {res.description}
+                                                                        </p>
+                                                                </a>
+                                                        ))}
+                                                </div>
+                                        </div>
+                                </main>
+
+                                <footer className="border-t border-gray-200 py-10 dark:border-gray-800">
+                                        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                        &copy; {new Date().getFullYear()} Pyxle. Released under the MIT License.
+                                                </p>
+                                                <div className="flex gap-6">
+                                                        <a href="https://github.com/shivamsn97/pyxle" className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">GitHub</a>
+                                                        <a href="https://pypi.org/project/pyxle/" className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">PyPI</a>
+                                                </div>
+                                        </div>
+                                </footer>
                         </div>
                 </div>
         );
