@@ -39,9 +39,6 @@ def test_init_scaffolds_project_structure() -> None:
         assert (project_dir / "public" / "styles" / "tailwind.css").exists()
         branding_dir = project_dir / "public" / "branding"
         assert (branding_dir / "pyxle-mark.svg").exists()
-        assert (branding_dir / "pyxle-wordmark-dark.svg").exists()
-        assert (branding_dir / "pyxle-wordmark-light.svg").exists()
-        assert (branding_dir / "pyxle-grid.svg").exists()
         assert not (project_dir / "pages" / "components").exists()
         assert (project_dir / "public" / "favicon.ico").read_bytes() == default_favicon_bytes()
 

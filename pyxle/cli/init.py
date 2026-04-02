@@ -30,9 +30,6 @@ def build_template_registry() -> TemplateRegistry:
     registry.register("pages/styles/tailwind.css", ScaffoldingTemplate("pages/styles/tailwind.css"))
     registry.register("pages/api/pulse.py", ScaffoldingTemplate("pages/api/pulse.py"))
     registry.register("public/branding/pyxle-mark.svg", ScaffoldingTemplate("public/branding/pyxle-mark.svg"))
-    registry.register("public/branding/pyxle-wordmark-dark.svg", ScaffoldingTemplate("public/branding/pyxle-wordmark-dark.svg"))
-    registry.register("public/branding/pyxle-wordmark-light.svg", ScaffoldingTemplate("public/branding/pyxle-wordmark-light.svg"))
-    registry.register("public/branding/pyxle-grid.svg", ScaffoldingTemplate("public/branding/pyxle-grid.svg"))
     registry.register("public/styles/tailwind.css", ScaffoldingTemplate("public/styles/tailwind.css"))
     return registry
 
