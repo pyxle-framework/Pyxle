@@ -6,7 +6,7 @@ All client-side components and hooks are importable from `pyxle/client`:
 import {
   Head, Script, Image, ClientOnly,
   Form, useAction,
-  Link, navigate, prefetch
+  Link, navigate, prefetch, refresh
 } from 'pyxle/client';
 ```
 
@@ -225,5 +225,17 @@ import { prefetch } from 'pyxle/client';
 
 <button onMouseEnter={() => prefetch('/dashboard')}>
   Go to Dashboard
+</button>
+```
+
+### `refresh()`
+
+Re-run the current page's `@server` loader and re-render with fresh data. Does not reload the page or change scroll position.
+
+```jsx
+import { refresh } from 'pyxle/client';
+
+<button onClick={() => refresh()}>
+  Refresh data
 </button>
 ```

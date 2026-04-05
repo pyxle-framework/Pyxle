@@ -186,7 +186,7 @@ def _render_client_runtime_index() -> str:
                   return null;
                 }
                 // API routes and static files are not navigable pages.
-                if (url.pathname.startsWith('/api/') || /\\.[a-zA-Z0-9]+$/.test(url.pathname)) {
+                if (url.pathname.startsWith('/api/') || /[.][a-zA-Z0-9]+$/.test(url.pathname)) {
                   return null;
                 }
                 // Same-page hash change — let browser handle scroll.
@@ -334,6 +334,15 @@ def _render_client_runtime_index() -> str:
                 return Promise.resolve(false);
               }
               return router.prefetch(url.href);
+            }
+
+            export function refresh() {
+              const router = getRouter();
+              if (!router) {
+                window.location.reload();
+                return Promise.resolve(false);
+              }
+              return router.refresh();
             }
 
             // Re-export framework primitives
@@ -538,10 +547,12 @@ def _render_client_runtime_index_types() -> str:
             export interface PyxleRouter {
               navigate(href: NavigationTarget, options?: NavigationOptions): Promise<boolean>;
               prefetch(href: NavigationTarget): Promise<boolean>;
+              refresh(): Promise<boolean>;
             }
 
             export declare function navigate(href: NavigationTarget, options?: NavigationOptions): Promise<boolean>;
             export declare function prefetch(href: NavigationTarget): Promise<boolean>;
+            export declare function refresh(): Promise<boolean>;
             export declare function getRouter(): PyxleRouter | null;
 
             // Re-export framework primitives with types
@@ -655,6 +666,7 @@ def _render_client_entry(settings: DevServerSettings) -> str:
             const router = {
               navigate: (href, options = {}) => navigateTo(href, options),
               prefetch: (href) => prefetchNavigation(href),
+              refresh: () => refreshCurrentPage(),
             };
 
             window.__PYXLE_ROUTER__ = router;
@@ -1189,6 +1201,42 @@ def _render_client_entry(settings: DevServerSettings) -> str:
                 if (!(error instanceof DOMException && error.name === 'AbortError')) {
                   console.error('[Pyxle] Client navigation failed; falling back to full reload', error);
                   window.location.assign(url.href);
+                }
+                return false;
+              } finally {
+                markNavigating(false);
+              }
+            }
+
+            async function refreshCurrentPage() {
+              const url = new URL(window.location.href);
+              const cacheKey = getCacheKey(url);
+
+              // Evict stale cache so we get a fresh server response.
+              navigationCache.delete(cacheKey);
+
+              markNavigating(true);
+              try {
+                const payload = await requestNavigationPayload(url, { useController: true });
+                if (!payload) {
+                  return false;
+                }
+
+                const nextPagePath = payload.page?.clientAssetPath ?? currentPagePath;
+                const nextProps = payload.props ?? {};
+                updateHead(payload.headMarkup ?? '');
+                await renderPage(nextPagePath, nextProps);
+
+                // Replace current history entry with fresh state — no scroll change.
+                window.history.replaceState(
+                  { pyxle: true, pagePath: nextPagePath },
+                  '',
+                  `${url.pathname}${url.search}${url.hash}`,
+                );
+                return true;
+              } catch (error) {
+                if (!(error instanceof DOMException && error.name === 'AbortError')) {
+                  console.error('[Pyxle] Refresh failed', error);
                 }
                 return false;
               } finally {
@@ -2096,7 +2144,7 @@ def _render_client_barrel() -> str:
             export { default as ClientOnly } from './client-only.jsx';
             export { useAction } from './use-action.jsx';
             export { Form } from './form.jsx';
-            export { Link, navigate, prefetch, Slot, SlotProvider, useSlot, useSlots } from './index.js';
+            export { Link, navigate, prefetch, refresh, Slot, SlotProvider, useSlot, useSlots } from './index.js';
             """
         ).strip()
         + "\n"
