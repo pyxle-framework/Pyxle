@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from textwrap import dedent
 
@@ -639,3 +640,49 @@ def test_catchall_action_dispatch_untagged_rejected(tmp_path: Path) -> None:
     )
     assert resp.status_code == 400
     assert resp.json()["ok"] is False
+
+
+# ---------------------------------------------------------------------------
+# Module caching: production vs debug
+# ---------------------------------------------------------------------------
+
+
+def test_import_module_caches_when_not_debug(tmp_path: Path) -> None:
+    """In production (debug=False), _import_module returns the cached module."""
+    from pyxle.devserver.starlette_app import _import_module
+
+    mod_path = tmp_path / "test_prod_cache.py"
+    mod_path.write_text("COUNTER = 1\n", encoding="utf-8")
+    key = "pyxle._test_prod_cache"
+
+    first = _import_module(key, mod_path, debug=False)
+    assert first.COUNTER == 1
+    first.COUNTER = 99
+
+    second = _import_module(key, mod_path, debug=False)
+    assert second is first
+    assert second.COUNTER == 99  # State preserved
+
+    sys.modules.pop(key, None)
+
+
+def test_import_module_reimports_when_debug(tmp_path: Path) -> None:
+    """In dev mode (debug=True), _import_module always re-executes the module."""
+    from pyxle.devserver.starlette_app import _import_module
+
+    mod_path = tmp_path / "test_debug_reload.py"
+    mod_path.write_text("COUNTER = 0\n", encoding="utf-8")
+    key = "pyxle._test_debug_reload"
+
+    first = _import_module(key, mod_path, debug=True)
+    assert first.COUNTER == 0
+
+    # Mutate state that would persist if the module were cached
+    first.COUNTER = 42
+
+    # In debug mode, the module must be re-imported (fresh exec), resetting state
+    second = _import_module(key, mod_path, debug=True)
+    assert second is not first
+    assert second.COUNTER == 0  # Reset — module was re-executed
+
+    sys.modules.pop(key, None)

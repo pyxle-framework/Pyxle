@@ -1,7 +1,7 @@
 <p align="center">
   <br />
   <a href="https://pyxle.dev">
-    <img src=".github/pyxle-logo.svg" alt="Pyxle" height="52" />
+    <img src="https://raw.githubusercontent.com/pyxle-framework/pyxle/main/.github/pyxle-logo.svg" alt="Pyxle" height="52" />
   </a>
   <br />
   <br />
@@ -57,17 +57,18 @@ Open **http://localhost:8000**.
 
 ## Documentation
 
-Full docs are in the [`docs/`](docs/README.md) directory:
+Full docs at [pyxle.dev/docs](https://pyxle.dev/docs/getting-started/installation):
 
-- [Quick Start](docs/getting-started/quick-start.md)
-- [`.pyx` Files](docs/core-concepts/pyx-files.md)
-- [Routing](docs/core-concepts/routing.md)
-- [Data Loading](docs/core-concepts/data-loading.md)
-- [Server Actions](docs/core-concepts/server-actions.md)
-- [Layouts](docs/core-concepts/layouts.md)
-- [Deployment](docs/guides/deployment.md)
-- [CLI Reference](docs/reference/cli.md)
-- [Configuration](docs/reference/configuration.md)
+- [Installation](https://pyxle.dev/docs/getting-started/installation)
+- [Quick Start](https://pyxle.dev/docs/getting-started/quick-start)
+- [`.pyx` Files](https://pyxle.dev/docs/core-concepts/pyx-files)
+- [Routing](https://pyxle.dev/docs/core-concepts/routing)
+- [Data Loading](https://pyxle.dev/docs/core-concepts/data-loading)
+- [Server Actions](https://pyxle.dev/docs/core-concepts/server-actions)
+- [Layouts](https://pyxle.dev/docs/core-concepts/layouts)
+- [Deployment](https://pyxle.dev/docs/guides/deployment)
+- [CLI Reference](https://pyxle.dev/docs/reference/cli)
+- [Configuration](https://pyxle.dev/docs/reference/configuration)
 
 ## CLI
 

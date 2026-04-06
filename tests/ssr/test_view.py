@@ -1143,8 +1143,8 @@ def test_purge_page_modules_handles_missing_dir(tmp_path: Path) -> None:
     _purge_page_modules(tmp_path / "nonexistent")
 
 
-def test_import_server_module_loads_and_evicts_cache(tmp_path: Path) -> None:
-    """_import_server_module loads the module and evicts from sys.modules first."""
+def test_import_server_module_loads_and_registers(tmp_path: Path) -> None:
+    """_import_server_module loads the module and registers it in sys.modules."""
     from pyxle.ssr.view import _import_server_module
 
     mod_path = tmp_path / "test_mod.py"
@@ -1156,4 +1156,42 @@ def test_import_server_module_loads_and_evicts_cache(tmp_path: Path) -> None:
     assert sys.modules[key] is module
 
     # Cleanup
+    sys.modules.pop(key, None)
+
+
+def test_import_server_module_caches_in_production(tmp_path: Path) -> None:
+    """In production (debug=False), calling twice returns the cached module."""
+    from pyxle.ssr.view import _import_server_module
+
+    mod_path = tmp_path / "test_cached.py"
+    mod_path.write_text("COUNTER = 1\n", encoding="utf-8")
+    key = "pyxle._test_cached_module"
+
+    first = _import_server_module(key, mod_path, debug=False)
+    assert first.COUNTER == 1
+    first.COUNTER = 99
+
+    second = _import_server_module(key, mod_path, debug=False)
+    assert second is first
+    assert second.COUNTER == 99  # State preserved
+
+    sys.modules.pop(key, None)
+
+
+def test_import_server_module_reimports_in_debug(tmp_path: Path) -> None:
+    """In dev mode (debug=True), the module is re-executed every time."""
+    from pyxle.ssr.view import _import_server_module
+
+    mod_path = tmp_path / "test_debug.py"
+    mod_path.write_text("COUNTER = 0\n", encoding="utf-8")
+    key = "pyxle._test_debug_module"
+
+    first = _import_server_module(key, mod_path, debug=True)
+    assert first.COUNTER == 0
+    first.COUNTER = 42
+
+    second = _import_server_module(key, mod_path, debug=True)
+    assert second is not first
+    assert second.COUNTER == 0  # Reset — module was re-executed
+
     sys.modules.pop(key, None)

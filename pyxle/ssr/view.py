@@ -343,12 +343,13 @@ async def _execute_loader(
     request: Request,
     *,
     module: Any | None,
+    debug: bool = False,
 ) -> Tuple[dict[str, Any], int, Any | None]:
     if not page.has_loader:
         return {}, 200, module
 
     if module is None:
-        module = _import_server_module(page.module_key, page.server_module_path)
+        module = _import_server_module(page.module_key, page.server_module_path, debug=debug)
     loader = getattr(module, page.loader_name or "", None)
     if loader is None:
         raise LoaderExecutionError(
@@ -367,12 +368,14 @@ def _resolve_head_elements(
     page: PageRoute,
     module,
     loader_payload: Mapping[str, Any],
+    *,
+    debug: bool = False,
 ) -> tuple[str, ...]:
     if not page.head_is_dynamic:
         return page.head_elements
 
     if module is None:
-        module = _import_server_module(page.module_key, page.server_module_path)
+        module = _import_server_module(page.module_key, page.server_module_path, debug=debug)
 
     head_value = getattr(module, "HEAD", None)
     if head_value is None:
@@ -415,19 +418,22 @@ async def _create_page_artifacts(
 ) -> PageArtifacts:
     module = None
     if page.head_is_dynamic:
-        module = _import_server_module(page.module_key, page.server_module_path)
+        module = _import_server_module(
+            page.module_key, page.server_module_path, debug=settings.debug,
+        )
 
     loader_props, status_code, module = await _execute_loader(
         page,
         request,
         module=module,
+        debug=settings.debug,
     )
 
     if page.has_loader:
         loader_breadcrumb["status"] = "passed"
         loader_breadcrumb["detail"] = f"Returned {len(loader_props)} key(s) with status {status_code}"
 
-    head_elements = _resolve_head_elements(page, module, loader_props)
+    head_elements = _resolve_head_elements(page, module, loader_props, debug=settings.debug)
     
     # Merge HEAD variable with JSX Head blocks and layout head blocks
     from pyxle.devserver.registry import find_layout_head_jsx_blocks
@@ -584,8 +590,12 @@ def _ensure_app_root_importable(module_path: Path) -> None:
             return
 
 
-def _import_server_module(module_key: str, module_path: Path):
+def _import_server_module(
+    module_key: str, module_path: Path, *, debug: bool = False,
+):
     if module_key in sys.modules:
+        if not debug:
+            return sys.modules[module_key]
         del sys.modules[module_key]
 
     _ensure_app_root_importable(module_path)

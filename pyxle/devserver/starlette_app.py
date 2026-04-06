@@ -195,7 +195,7 @@ def build_api_router(
     hooks = list(route_hooks or [])
 
     for route in routes:
-        module = _import_module(route.module_key, route.server_module_path)
+        module = _import_module(route.module_key, route.server_module_path, debug=True)
         handler = _resolve_api_handler(module)
         context = RouteContext(
             target="api",
@@ -216,15 +216,25 @@ def build_api_router(
     return router
 
 
-def _import_module(module_key: str, module_path: Path) -> ModuleType:
+def _import_module(
+    module_key: str, module_path: Path, *, debug: bool = False,
+) -> ModuleType:
     """Import a compiled module located at ``module_path`` under ``module_key``.
 
     Ensures the project root is on ``sys.path`` so that user-level imports
     (e.g. ``from db import ...``) resolve without manual ``sys.path`` hacks.
+
+    When *debug* is ``False`` (production), a previously imported module is
+    returned from ``sys.modules`` without re-execution.  When *debug* is
+    ``True``, the module is always re-imported from disk so that code changes
+    take effect immediately.
     """
 
     if module_key in sys.modules:
+        if not debug:
+            return sys.modules[module_key]
         del sys.modules[module_key]
+        importlib.invalidate_caches()
 
     # Compiled modules live under <project_root>/<build_dir>/server/...
     # Walk up to the build-directory ancestor to find the project root.
@@ -350,7 +360,9 @@ def _make_page_handler(
     return handler
 
 
-def build_action_router(routes: Iterable[ActionRoute]) -> Router:
+def build_action_router(
+    routes: Iterable[ActionRoute], *, debug: bool = False,
+) -> Router:
     """Create a Starlette ``Router`` for auto-generated ``@action`` endpoints.
 
     Each action is registered as ``POST /api/__actions/<page_path>/<action_name>``.
@@ -361,15 +373,19 @@ def build_action_router(routes: Iterable[ActionRoute]) -> Router:
     action route (``is_catchall=True``) is also registered.  It captures the
     trailing path segments and extracts the action name from the last one,
     allowing the client to resolve actions regardless of the active sub-path.
+
+    When *debug* is ``True``, action modules are re-imported from disk on every
+    request so code changes take effect immediately.  When ``False`` (production),
+    modules are cached after first import.
     """
 
     router = Router()
 
     for route in routes:
         if route.is_catchall:
-            handler = _make_catchall_action_handler(route)
+            handler = _make_catchall_action_handler(route, debug=debug)
         else:
-            handler = _make_action_handler(route)
+            handler = _make_action_handler(route, debug=debug)
         router.add_route(route.path, handler, methods=["POST"])
 
     return router
@@ -380,12 +396,14 @@ async def _dispatch_action(
     module_key: str,
     server_module_path: Path,
     action_name: str,
+    *,
+    debug: bool = False,
 ) -> JSONResponse:
     """Shared dispatch logic for both specific and catch-all action handlers."""
     from pyxle.runtime import ActionError
 
     try:
-        module = _import_module(module_key, server_module_path)
+        module = _import_module(module_key, server_module_path, debug=debug)
     except ApiRouteError as exc:
         return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
 
@@ -421,17 +439,18 @@ async def _dispatch_action(
     return JSONResponse({"ok": True, **result})
 
 
-def _make_action_handler(route: ActionRoute):
+def _make_action_handler(route: ActionRoute, *, debug: bool = False):
     async def handler(request: Request):
         return await _dispatch_action(
             request, route.module_key, route.server_module_path, route.action_name,
+            debug=debug,
         )
 
     handler.__name__ = f"action_{route.module_key.replace('.', '_')}_{route.action_name}"
     return handler
 
 
-def _make_catchall_action_handler(route: ActionRoute):
+def _make_catchall_action_handler(route: ActionRoute, *, debug: bool = False):
     """Create a handler that extracts the action name from a catch-all path.
 
     The client constructs action URLs using ``window.location.pathname``.
@@ -456,6 +475,7 @@ def _make_catchall_action_handler(route: ActionRoute):
 
         return await _dispatch_action(
             request, route.module_key, route.server_module_path, action_name,
+            debug=debug,
         )
 
     handler.__name__ = f"action_{route.module_key.replace('.', '_')}_catchall"
@@ -688,7 +708,7 @@ def create_starlette_app(
         route_hooks=[*DEFAULT_PAGE_POLICIES, *page_route_hooks],
         error_boundaries=error_boundaries,
     )
-    action_router = build_action_router(routes.actions)
+    action_router = build_action_router(routes.actions, debug=settings.debug)
     app.router.routes.extend(api_router.routes)
     app.router.routes.extend(action_router.routes)
     app.router.routes.extend(page_router.routes)
