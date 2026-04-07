@@ -37,6 +37,51 @@ const _moduleCache = new Map();
 // Key: resolved componentPath, Value: { moduleExports, styleDescriptors }
 const _bundleCache = new Map();
 
+// Cache postcss.config.* presence per project root so we don't stat the
+// filesystem on every render.
+const _postcssCache = new Map();
+
+const POSTCSS_CONFIG_FILENAMES = [
+  'postcss.config.cjs',
+  'postcss.config.js',
+  'postcss.config.mjs',
+  'postcss.config.ts',
+];
+
+/**
+ * Locate a PostCSS config file in the project root.
+ *
+ * When a PostCSS config is present, the project has opted into Vite's CSS
+ * pipeline -- Vite (via PostCSS) compiles every imported stylesheet, hashes
+ * it, and lists it in the manifest. Pyxle's build pipeline then writes the
+ * hashed asset paths into ``page-manifest.json`` and the SSR template emits
+ * a ``<link rel="stylesheet">`` tag on every render. The legacy
+ * ``pyxle-inline-css`` esbuild plugin (which reads CSS files raw and dumps
+ * them into a ``<style>`` block) becomes redundant in this mode -- worse,
+ * it dumps unprocessed ``@tailwind`` directives that browsers can't parse
+ * and duplicates payload that is already served via the hashed link.
+ */
+function detectPostcssConfig(projectRoot) {
+  if (!projectRoot) return null;
+  if (_postcssCache.has(projectRoot)) {
+    return _postcssCache.get(projectRoot);
+  }
+  let result = null;
+  for (const filename of POSTCSS_CONFIG_FILENAMES) {
+    const candidate = path.join(projectRoot, filename);
+    try {
+      if (fs.statSync(candidate).isFile()) {
+        result = candidate;
+        break;
+      }
+    } catch {
+      // File does not exist or is not accessible -- keep looking.
+    }
+  }
+  _postcssCache.set(projectRoot, result);
+  return result;
+}
+
 // Stable temp directory per worker (created once, cleaned on exit).
 let _stableTempDir = null;
 
@@ -134,6 +179,7 @@ async function renderRequest({ componentPath, props, clientRoot, projectRoot: pr
   // Fresh registries for each render (head elements depend on props/render).
   const styleRegistry = createStyleRegistry(projectRoot);
   globalThis.__PYXLE_REGISTER_SSR_STYLE__ = (entry) => styleRegistry.register(entry);
+  const skipInlineCss = detectPostcssConfig(projectRoot) !== null;
 
   const headRegistry = createHeadRegistry();
   globalThis.__PYXLE_HEAD_REGISTRY__ = headRegistry;
@@ -183,6 +229,18 @@ async function renderRequest({ componentPath, props, clientRoot, projectRoot: pr
           name: 'pyxle-inline-css',
           setup(build) {
             build.onLoad({ filter: /\.css$/ }, async (args) => {
+              if (skipInlineCss) {
+                // Project has postcss.config.* -- Vite owns CSS via the
+                // manifest pipeline. Reading and inlining the raw source
+                // here would dump unparseable @tailwind directives and
+                // duplicate the hashed <link> the SSR template already
+                // emits. Resolve to an empty side-effect module instead.
+                return {
+                  contents: 'export default "";',
+                  loader: 'js',
+                  resolveDir: path.dirname(args.path),
+                };
+              }
               const contents = await fs.promises.readFile(args.path, 'utf8');
               const descriptor = styleRegistry.describe(args.path, contents);
               const moduleCode = `const entry = ${JSON.stringify(descriptor)};
