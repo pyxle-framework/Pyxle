@@ -13,6 +13,7 @@ from typing import Any, Dict
 from pyxle.devserver.builder import BuildSummary, build_once
 from pyxle.devserver.registry import MetadataRegistry, build_metadata_registry
 from pyxle.devserver.settings import DevServerSettings
+from pyxle.devserver.tailwind import detect_postcss_config
 
 
 @dataclass(frozen=True, slots=True)
@@ -99,8 +100,15 @@ def _run_npm_build(project_root: Path, logger: Any, *, settings: DevServerSettin
         _log(logger, "warning", "No package.json found; skipping npm build")
         return
 
-    # Step 1: Run Tailwind CSS build if the build:css script exists
-    _run_npm_script(project_root, "build:css", logger, required=False)
+    # Step 1: Run the standalone Tailwind CSS build (legacy path) only when
+    # the project does NOT have a PostCSS config. When PostCSS is wired up,
+    # Vite runs all CSS imports through it during the bundle step below, so
+    # invoking ``npm run build:css`` would either be a no-op (if the script
+    # doesn't exist, producing a noisy ``missing script`` warning) or
+    # duplicate work (if it does). Skipping it keeps the build output quiet
+    # for new projects on the recommended Vite-managed CSS path.
+    if detect_postcss_config(project_root) is None:
+        _run_npm_script(project_root, "build:css", logger, required=False)
 
     # Step 2: Run Vite build with explicit --config pointing to
     # the generated config inside .pyxle-build/client/.  The scaffold's

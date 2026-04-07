@@ -13,6 +13,7 @@ from pyxle.devserver.settings import DevServerSettings
 from pyxle.devserver.tailwind import (
     TailwindProcess,
     _parse_tailwind_paths_from_package_json,
+    detect_postcss_config,
     detect_tailwind_config,
     resolve_tailwind_paths,
 )
@@ -64,6 +65,48 @@ def test_detect_tailwind_config_prefers_cjs_first(tmp_path: Path) -> None:
     (tmp_path / "tailwind.config.cjs").write_text("cjs")
     (tmp_path / "tailwind.config.js").write_text("js")
     assert detect_tailwind_config(tmp_path) == tmp_path / "tailwind.config.cjs"
+
+
+# --- detect_postcss_config ---
+
+
+def test_detect_postcss_config_finds_cjs(tmp_path: Path) -> None:
+    (tmp_path / "postcss.config.cjs").write_text(
+        "module.exports = { plugins: { tailwindcss: {} } }"
+    )
+    assert detect_postcss_config(tmp_path) == tmp_path / "postcss.config.cjs"
+
+
+def test_detect_postcss_config_finds_js(tmp_path: Path) -> None:
+    (tmp_path / "postcss.config.js").write_text("export default {}")
+    assert detect_postcss_config(tmp_path) == tmp_path / "postcss.config.js"
+
+
+def test_detect_postcss_config_finds_mjs(tmp_path: Path) -> None:
+    (tmp_path / "postcss.config.mjs").write_text("export default {}")
+    assert detect_postcss_config(tmp_path) == tmp_path / "postcss.config.mjs"
+
+
+def test_detect_postcss_config_finds_ts(tmp_path: Path) -> None:
+    (tmp_path / "postcss.config.ts").write_text("export default {}")
+    assert detect_postcss_config(tmp_path) == tmp_path / "postcss.config.ts"
+
+
+def test_detect_postcss_config_returns_none_when_missing(tmp_path: Path) -> None:
+    assert detect_postcss_config(tmp_path) is None
+
+
+def test_detect_postcss_config_prefers_cjs_first(tmp_path: Path) -> None:
+    (tmp_path / "postcss.config.cjs").write_text("cjs")
+    (tmp_path / "postcss.config.js").write_text("js")
+    (tmp_path / "postcss.config.mjs").write_text("mjs")
+    (tmp_path / "postcss.config.ts").write_text("ts")
+    assert detect_postcss_config(tmp_path) == tmp_path / "postcss.config.cjs"
+
+
+def test_detect_postcss_config_ignores_directory_with_same_name(tmp_path: Path) -> None:
+    (tmp_path / "postcss.config.cjs").mkdir()
+    assert detect_postcss_config(tmp_path) is None
 
 
 # --- _parse_tailwind_paths_from_package_json ---

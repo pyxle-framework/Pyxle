@@ -16,7 +16,7 @@ from .registry import build_metadata_registry
 from .routes import build_route_table
 from .settings import DevServerSettings
 from .starlette_app import create_starlette_app
-from .tailwind import TailwindProcess, detect_tailwind_config
+from .tailwind import TailwindProcess, detect_postcss_config, detect_tailwind_config
 from .vite import ViteProcess
 from .watcher import ProjectWatcher, WatcherStatistics
 
@@ -105,8 +105,16 @@ class DevServer:
             await vite_process.wait_until_ready()
 
             if self.tailwind and detect_tailwind_config(settings.project_root) is not None:
-                tailwind_process = TailwindProcess(settings, logger=logger)
-                await tailwind_process.start()
+                postcss_config = detect_postcss_config(settings.project_root)
+                if postcss_config is not None:
+                    logger.info(
+                        f"Detected {postcss_config.name} \u2014 skipping standalone "
+                        "Tailwind watcher; CSS will be processed and hashed by "
+                        "Vite via PostCSS."
+                    )
+                else:
+                    tailwind_process = TailwindProcess(settings, logger=logger)
+                    await tailwind_process.start()
 
             watcher = ProjectWatcher(settings, logger=logger, on_rebuild=_handle_rebuild)
             self._watcher = watcher

@@ -5,9 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run build:css && vite build",
-    "dev:css": "tailwindcss -i ./pages/styles/tailwind.css -o ./public/styles/tailwind.css --watch",
-    "build:css": "tailwindcss -i ./pages/styles/tailwind.css -o ./public/styles/tailwind.css --minify",
+    "build": "vite build",
     "lint": "echo \"Add your linter of choice\""
   },
   "dependencies": {

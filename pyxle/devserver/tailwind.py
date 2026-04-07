@@ -21,6 +21,13 @@ _TAILWIND_CONFIG_FILENAMES: Sequence[str] = (
     "tailwind.config.mjs",
 )
 
+_POSTCSS_CONFIG_FILENAMES: Sequence[str] = (
+    "postcss.config.cjs",
+    "postcss.config.js",
+    "postcss.config.mjs",
+    "postcss.config.ts",
+)
+
 _DEFAULT_INPUT_CSS = Path("pages") / "styles" / "tailwind.css"
 _DEFAULT_OUTPUT_CSS = Path("public") / "styles" / "tailwind.css"
 
@@ -29,6 +36,24 @@ def detect_tailwind_config(project_root: Path) -> Path | None:
     """Return the path to the Tailwind config file, or ``None`` if not found."""
 
     for filename in _TAILWIND_CONFIG_FILENAMES:
+        candidate = project_root / filename
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def detect_postcss_config(project_root: Path) -> Path | None:
+    """Return the path to the project's PostCSS config, or ``None`` if absent.
+
+    When a PostCSS config is present, Pyxle defers CSS processing to Vite's
+    PostCSS pipeline rather than running the standalone Tailwind CLI watcher.
+    Stylesheets imported from a JSX module are then compiled, content-hashed,
+    and listed in the Vite manifest, so the SSR template can emit a
+    cache-busting ``<link rel="stylesheet" href="/client/dist/assets/{name}-{hash}.css" />``
+    on every request without any manual ``?v=N`` workaround.
+    """
+
+    for filename in _POSTCSS_CONFIG_FILENAMES:
         candidate = project_root / filename
         if candidate.is_file():
             return candidate
@@ -266,4 +291,9 @@ class TailwindProcess:
                 self._logger.info(f"[tailwind] {message}")
 
 
-__all__ = ["TailwindProcess", "detect_tailwind_config", "resolve_tailwind_paths"]
+__all__ = [
+    "TailwindProcess",
+    "detect_postcss_config",
+    "detect_tailwind_config",
+    "resolve_tailwind_paths",
+]

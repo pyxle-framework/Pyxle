@@ -17,6 +17,7 @@ async def load_home(request):
 
 
 # --- client ---
+import './styles/tailwind.css';
 import React from 'react';
 import { Head } from 'pyxle/client';
 
@@ -30,7 +31,6 @@ export default function HomePage({ data }) {
                 <title>Pyxle App</title>
                 <meta name="description" content="A fresh Pyxle project." />
                 <link rel="icon" href="/favicon.ico" />
-                <link rel="stylesheet" href="/styles/tailwind.css" />
             </Head>
             <div className="w-full max-w-md text-center">
                 <img

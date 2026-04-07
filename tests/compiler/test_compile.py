@@ -424,6 +424,39 @@ def test_compile_rewrites_pyx_imports_in_client_output(tmp_path: Path) -> None:
     assert "../chunks/skip.pyx" in client_text
 
 
+def test_compile_passes_through_side_effect_css_imports(tmp_path: Path) -> None:
+    """Side-effect CSS imports in the JSX section must reach the generated
+    ``.jsx`` file unchanged so Vite (with PostCSS) can process and content-hash
+    the stylesheets. This is the foundation for cache-busting CSS bundles --
+    Vite lists the resulting hashed file under the page's manifest entry, the
+    build pipeline copies that into ``page-manifest.json``, and the SSR
+    template emits a ``<link rel="stylesheet" href="/client/dist/assets/{name}-{hash}.css" />``.
+    Without this passthrough, every step downstream would silently drop the
+    stylesheet.
+    """
+
+    content = dedent(
+        """
+        import './styles/tailwind.css';
+        import "../shared/extra.css";
+        import React from 'react';
+
+        export default function Page() {
+            return <main className="p-8">Hello</main>;
+        }
+        """
+    )
+
+    source = write(tmp_path, "project/pages/index.pyx", content)
+    build_root = tmp_path / "project/.pyxle-build"
+
+    result = compile_file(source, build_root=build_root)
+
+    client_text = result.client_output.read_text(encoding="utf-8")
+    assert "import './styles/tailwind.css';" in client_text
+    assert 'import "../shared/extra.css";' in client_text
+
+
 def test_compile_rejects_non_pyx_files(tmp_path: Path) -> None:
     source = write(tmp_path, "project/pages/index.jsx", "console.log('hi');")
     build_root = tmp_path / "project/.pyxle-build"

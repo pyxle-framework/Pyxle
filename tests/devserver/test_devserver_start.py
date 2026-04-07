@@ -837,3 +837,114 @@ async def test_devserver_skips_tailwind_when_disabled(monkeypatch, tmp_path: Pat
     await server.start()
 
     assert len(tailwind_instances) == 0
+
+
+async def test_devserver_skips_tailwind_when_postcss_config_present(monkeypatch, tmp_path: Path) -> None:
+    """When ``postcss.config.*`` is present alongside ``tailwind.config.*``, the
+    standalone Tailwind watcher is skipped because Vite will process CSS
+    through PostCSS instead. The user gets a clear info log explaining the
+    decision so the behaviour is never silent.
+    """
+
+    (tmp_path / "tailwind.config.cjs").write_text("module.exports = {}")
+    (tmp_path / "postcss.config.cjs").write_text(
+        "module.exports = { plugins: { tailwindcss: {}, autoprefixer: {} } }"
+    )
+    styles_dir = tmp_path / "pages" / "styles"
+    styles_dir.mkdir(parents=True)
+    (styles_dir / "tailwind.css").write_text("@tailwind base;")
+
+    settings = DevServerSettings.from_project_root(tmp_path)
+    capture = LogCapture()
+    logger = ConsoleLogger(secho=capture)
+    tailwind_instances: list[Any] = []
+
+    monkeypatch.setattr(
+        "pyxle.devserver.build_once",
+        lambda cfg, **_: BuildSummary(compiled_pages=[], copied_api_modules=[], removed=[]),
+    )
+    monkeypatch.setattr(
+        "pyxle.devserver.build_metadata_registry",
+        lambda cfg: MetadataRegistry(pages=[], apis=[]),
+    )
+    monkeypatch.setattr(
+        "pyxle.devserver.build_route_table",
+        lambda registry: RouteTable(pages=[], apis=[]),
+    )
+    monkeypatch.setattr(
+        "pyxle.devserver.write_client_bootstrap_files",
+        lambda cfg: None,
+    )
+
+    class DummyApp:
+        def __init__(self) -> None:
+            self.state = SimpleNamespace()
+
+    monkeypatch.setattr(
+        "pyxle.devserver.create_starlette_app",
+        lambda cfg, routes, **_: DummyApp(),
+    )
+
+    class StubVite:
+        def __init__(self, *a: Any, **kw: Any) -> None:
+            pass
+
+        async def start(self) -> None:
+            pass
+
+        async def wait_until_ready(self) -> None:
+            pass
+
+        async def stop(self) -> None:
+            pass
+
+    monkeypatch.setattr("pyxle.devserver.ViteProcess", StubVite)
+
+    class StubWatcher:
+        def __init__(self, *a: Any, **kw: Any) -> None:
+            pass
+
+        def start(self) -> None:
+            pass
+
+        def close(self) -> None:
+            pass
+
+    monkeypatch.setattr("pyxle.devserver.ProjectWatcher", StubWatcher)
+
+    class StubTailwind:
+        def __init__(self, *a: Any, **kw: Any) -> None:
+            tailwind_instances.append(self)
+
+        async def start(self) -> None:  # pragma: no cover - skip path means start is never reached
+            pass
+
+        async def stop(self) -> None:  # pragma: no cover - skip path means stop is never reached
+            pass
+
+    monkeypatch.setattr("pyxle.devserver.TailwindProcess", StubTailwind)
+
+    class StubConfig:
+        def __init__(self, *a: Any, **kw: Any) -> None:
+            pass
+
+    class StubServer:
+        def __init__(self, *a: Any) -> None:
+            self.should_exit = False
+
+        async def serve(self) -> None:
+            pass
+
+    monkeypatch.setattr("pyxle.devserver.uvicorn.Config", StubConfig)
+    monkeypatch.setattr("pyxle.devserver.uvicorn.Server", StubServer)
+
+    server = DevServer(settings=settings, logger=logger, tailwind=True)
+    await server.start()
+
+    # The standalone watcher must NOT have been instantiated.
+    assert tailwind_instances == []
+    # And the user must have been told why.
+    assert any(
+        "postcss.config.cjs" in m and "skipping standalone Tailwind watcher" in m
+        for m in capture.messages
+    ), f"Expected skip log line, got: {capture.messages}"
