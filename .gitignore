@@ -12,7 +12,10 @@ __pycache__/
 *$py.class
 
 # Distribution / packaging
-build/
+# Anchored to the repo root with a leading slash so it only matches the
+# top-level ``build/`` directory (setuptools / wheel output) and does NOT
+# shadow the framework's ``pyxle/build/`` Python package.
+/build/
 !docs/build/
 dist/
 *.egg-info/
