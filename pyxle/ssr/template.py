@@ -247,35 +247,15 @@ def _render_manifest_error(page: PageRoute) -> str:
 """.format(page_path=page_path)
 
 
-def render_error_document(
-    *,
-    settings: DevServerSettings,
-    page: PageRoute,
-    error: BaseException,
-) -> str:
-    """Render a developer-friendly fallback when SSR fails."""
-
-    vite_origin = _browser_vite_origin(settings)
-    error_type = escape(error.__class__.__name__)
-    message = escape(str(error) or str(error.__class__.__name__))
-    page_path = escape(page.path)
-
-    return """<!DOCTYPE html>
-<html lang=\"en\">
-  <head>
-    <meta charset=\"utf-8\" />
-    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
-    <title>Pyxle • Error</title>
-    <script type=\"module\" src=\"{vite_origin}/@vite/client\"></script>
-    <style>
-      body {{
+_ERROR_DOCUMENT_STYLES = """    <style>
+      body {
         font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;
         margin: 0;
         padding: 3rem 1.5rem;
         background: #111827;
         color: #f9fafb;
-      }}
-      .pyxle-error {{
+      }
+      .pyxle-error {
         max-width: 48rem;
         margin: 0 auto;
         background: rgba(17, 24, 39, 0.65);
@@ -283,15 +263,58 @@ def render_error_document(
         border-radius: 0.75rem;
         padding: 2rem;
         box-shadow: 0 30px 60px rgba(15, 23, 42, 0.45);
-      }}
-      .pyxle-error code {{
+      }
+      .pyxle-error code {
         font-family: Menlo, Monaco, Consolas, \"Liberation Mono\", monospace;
         background: rgba(15, 23, 42, 0.6);
         padding: 0.25rem 0.5rem;
         border-radius: 0.5rem;
         color: #fca5a5;
-      }}
-    </style>
+      }
+    </style>"""
+
+
+def render_error_document(
+    *,
+    settings: DevServerSettings,
+    page: PageRoute,
+    error: BaseException,
+) -> str:
+    """Render a fallback HTML document when SSR fails.
+
+    The output depends on ``settings.debug``:
+
+    * **Dev mode** (``debug=True``): Returns a developer-friendly
+      overlay containing the route path, exception type name, and
+      exception message verbatim. Includes the Vite HMR client tag
+      so the page reloads automatically when the developer fixes
+      the error.
+
+    * **Production mode** (``debug=False``): Returns a generic
+      error page that does NOT include the exception type, message,
+      route path, or any dev-mode tooling. Production responses
+      must not leak internal state — exception messages may
+      include database row IDs, API keys, file paths, or other
+      sensitive details. Per ``CLAUDE.md`` rule 18, the
+      production response is intentionally opaque; the actual
+      error details are written to the server logs by the caller.
+    """
+    if not settings.debug:
+        return _render_production_error_document()
+
+    vite_origin = _browser_vite_origin(settings)
+    error_type = escape(error.__class__.__name__)
+    message = escape(str(error) or error.__class__.__name__)
+    page_path = escape(page.path)
+
+    return f"""<!DOCTYPE html>
+<html lang=\"en\">
+  <head>
+    <meta charset=\"utf-8\" />
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+    <title>Pyxle • Error</title>
+    <script type=\"module\" src=\"{vite_origin}/@vite/client\"></script>
+{_ERROR_DOCUMENT_STYLES}
   </head>
   <body>
     <main class=\"pyxle-error\">
@@ -302,12 +325,32 @@ def render_error_document(
     </main>
   </body>
 </html>
-""".format(
-        vite_origin=vite_origin,
-        page_path=page_path,
-        error_type=error_type,
-        message=message,
-    )
+"""
+
+
+def _render_production_error_document() -> str:
+    """Generic production error page — leaks no internal state.
+
+    Used when ``settings.debug`` is False. Intentionally omits the
+    exception type, message, route path, and the dev-mode Vite
+    client tag.
+    """
+    return f"""<!DOCTYPE html>
+<html lang=\"en\">
+  <head>
+    <meta charset=\"utf-8\" />
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+    <title>Server Error</title>
+{_ERROR_DOCUMENT_STYLES}
+  </head>
+  <body>
+    <main class=\"pyxle-error\">
+      <h1>Server Error</h1>
+      <p>The server encountered an error while processing this request. Please try again later.</p>
+    </main>
+  </body>
+</html>
+"""
 
 
 def _format_nonce_attr(value: str | None) -> str:

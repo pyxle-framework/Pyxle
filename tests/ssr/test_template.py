@@ -8,7 +8,7 @@ import pytest
 from pyxle.devserver.routes import PageRoute
 from pyxle.devserver.settings import DevServerSettings
 from pyxle.ssr.renderer import InlineStyleFragment
-from pyxle.ssr.template import render_document
+from pyxle.ssr.template import render_document, render_error_document
 
 
 @pytest.fixture
@@ -342,3 +342,104 @@ def test_render_document_skips_blank_head_fragments(
     assert '<meta name="description" content="Demo" />' in html
     assert '<link rel="icon" href="/favicon.ico" />' in html
     assert html.count('<link rel="icon" href="/favicon.ico" />') == 1
+
+
+# ---------------------------------------------------------------------------
+# render_error_document — dev vs production behavior
+# ---------------------------------------------------------------------------
+
+
+class _SecretError(RuntimeError):
+    """Custom exception used by the error-document tests."""
+
+
+def test_render_error_document_dev_mode_includes_details(
+    page_route: PageRoute, tmp_path: Path
+) -> None:
+    """Dev mode keeps the developer-friendly overlay: route path,
+    exception type, exception message, and the Vite HMR client tag
+    so the page reloads when the developer fixes the bug."""
+    settings = DevServerSettings.from_project_root(tmp_path)  # debug=True
+    error = _SecretError("DB row 12345 / api_key=sk_live_abc123")
+
+    html = render_error_document(
+        settings=settings, page=page_route, error=error
+    )
+
+    assert "Server Render Failed" in html
+    assert "_SecretError" in html
+    assert "DB row 12345 / api_key=sk_live_abc123" in html
+    assert page_route.path in html
+    assert "@vite/client" in html
+
+
+def test_render_error_document_production_mode_redacts_internals(
+    page_route: PageRoute, tmp_path: Path
+) -> None:
+    """Production mode (debug=False) MUST NOT leak the exception
+    type, the exception message, the route path, or the Vite HMR
+    client tag. Per CLAUDE.md rule 18, production responses must
+    not expose internal state."""
+    settings = replace(
+        DevServerSettings.from_project_root(tmp_path), debug=False
+    )
+    error = _SecretError("DB row 12345 / api_key=sk_live_abc123")
+
+    html = render_error_document(
+        settings=settings, page=page_route, error=error
+    )
+
+    # Generic error page is rendered.
+    assert "Server Error" in html
+    assert "<!DOCTYPE html>" in html
+    # NONE of the internal details leak.
+    assert "_SecretError" not in html
+    assert "DB row 12345" not in html
+    assert "api_key" not in html
+    assert "sk_live_abc123" not in html
+    # The dev-mode Vite client tag must be absent in production.
+    assert "@vite/client" not in html
+    assert "5173" not in html
+    # The route path must not leak either — it can be reconstructed
+    # from the request URL but the response body shouldn't echo it.
+    assert page_route.path not in html or page_route.path == "/"
+
+
+def test_render_error_document_production_handles_html_in_message(
+    page_route: PageRoute, tmp_path: Path
+) -> None:
+    """Even though prod doesn't include the message, confirm that
+    an exception whose ``str()`` contains HTML/script tags can't
+    sneak in via any code path. The output is the same fixed
+    string regardless of the input error."""
+    settings = replace(
+        DevServerSettings.from_project_root(tmp_path), debug=False
+    )
+    error = RuntimeError("<script>alert('xss')</script>")
+
+    html = render_error_document(
+        settings=settings, page=page_route, error=error
+    )
+
+    assert "<script>alert" not in html
+    assert "alert(" not in html
+    assert "RuntimeError" not in html
+
+
+def test_render_error_document_dev_escapes_html_in_message(
+    page_route: PageRoute, tmp_path: Path
+) -> None:
+    """Dev mode shows the message but must HTML-escape it so an
+    attacker who can trigger an exception with HTML in the
+    message text cannot inject script tags into the dev overlay."""
+    settings = DevServerSettings.from_project_root(tmp_path)  # debug=True
+    error = RuntimeError("<script>alert('xss')</script>")
+
+    html = render_error_document(
+        settings=settings, page=page_route, error=error
+    )
+
+    # Raw script tag is NOT in the output.
+    assert "<script>alert" not in html
+    # Escaped form IS in the output.
+    assert "&lt;script&gt;alert" in html
