@@ -202,7 +202,7 @@ them as metadata, and during SSR the head merger hoists them into the
 document `<head>` alongside contributions from parent layouts. Dynamic
 content interpolates through normal JSX expressions
 (`{data.post.title}`), and nested components can contribute their own
-head elements — see [SSR § Head pipeline](ssr.md#head-element-pipeline).
+head elements — see [SSR § Stage 3: resolving the head](ssr.md#stage-3-resolving-the-head).
 
 For the rare case where a page has no JSX component at all and still
 needs head metadata, Pyxle also supports a compile-time `HEAD` Python

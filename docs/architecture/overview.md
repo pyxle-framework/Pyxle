@@ -61,7 +61,7 @@ That's the whole file. Notice three things:
    also supports a legacy `HEAD` Python variable that the parser picks
    up at compile time, kept around for backward compatibility, but
    `<Head>` is the idiomatic choice for every real page. See
-   [SSR § Head element pipeline](ssr.md#head-element-pipeline).
+   [SSR § Stage 3: resolving the head](ssr.md#stage-3-resolving-the-head).
 
 ---
 
@@ -94,7 +94,7 @@ type `pyxle dev`, this is what happens:
    Node.js worker that stays alive for the life of the dev server. The
    worker speaks newline-delimited JSON over stdin/stdout. Each render
    round-trip is ~30-80ms; spawning a fresh subprocess per request would
-   be 200-400ms. Details: [SSR § Worker pool](ssr.md#worker-pool).
+   be 200-400ms. Details: [SSR § Worker pool mode](ssr.md#worker-pool-mode).
 
 5. **Start the file watcher.** Pyxle watches `pages/`, `public/`, and any
    global stylesheets/scripts. When a file changes, the watcher debounces
@@ -193,7 +193,7 @@ If the loader raises `LoaderError("Not found", status_code=404)`, Pyxle
 walks up the directory tree from the current page looking for the
 nearest `error.pyx` file. If one exists, it renders that boundary with
 the error context. If not, it falls back to the default error document.
-Details: [SSR § Error boundaries](ssr.md#error-boundaries).
+Details: [SSR § Error handling](ssr.md#error-handling).
 
 ---
 
@@ -265,7 +265,7 @@ does:
    `{html, head_elements, inline_styles}`.
 
 The worker pool is just round-robin over N workers, with automatic
-respawn if a worker crashes. See [SSR § Worker pool](ssr.md#worker-pool).
+respawn if a worker crashes. See [SSR § Worker pool mode](ssr.md#worker-pool-mode).
 
 What comes back from `ComponentRenderer.render()` is a `RenderResult`
 dataclass with the body HTML, any extracted head elements, and any
