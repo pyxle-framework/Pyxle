@@ -283,6 +283,44 @@ def test_ensure_server_import_handles_docstring_and_future() -> None:
     assert lines[5] == "answer = 42"
 
 
+def test_determine_server_import_index_empty_lines_returns_zero() -> None:
+    """The empty-lines defensive branch returns 0."""
+    from pyxle.compiler.writers import _determine_server_import_index
+
+    assert _determine_server_import_index([], None) == 0
+
+
+def test_compile_respects_server_attribute_assignment(tmp_path: Path) -> None:
+    """A ``foo.server = ...`` attribute assignment is not the same as
+    ``server = ...``; the user-defined assignment to a *Name* target is
+    what suppresses the auto-import."""
+    content = dedent(
+        """
+        from typing import Any
+
+        class _Box:
+            server: Any = None
+
+        _box = _Box()
+        _box.server = lambda fn: fn
+
+        @_box.server
+        async def loader(request):
+            return {"answer": 42}
+        """
+    )
+
+    source = write(tmp_path, "project/pages/attr.pyx", content)
+    build_root = tmp_path / "project/.pyxle-build"
+
+    result = compile_file(source, build_root=build_root)
+
+    server_text = result.server_output.read_text(encoding="utf-8")
+    # The user did not assign to a top-level Name `server`, so the
+    # auto-import IS injected.
+    assert "from pyxle.runtime import server" in server_text
+
+
 def test_ensure_server_import_reports_insert_position() -> None:
     source = dedent(
         '''
@@ -475,6 +513,20 @@ def test_compile_requires_pages_directory(tmp_path: Path) -> None:
         compile_file(source, build_root=build_root)
 
     assert "pages" in str(excinfo.value)
+
+
+def test_compile_rejects_file_named_pages_pyx(tmp_path: Path) -> None:
+    """A path whose last directory component is literally ``pages`` (the
+    .pyx file is named ``pages.pyx``) triggers the
+    "Expected file path inside pages/" branch."""
+    from pyxle.compiler.core import _relative_page_path
+
+    # Direct call to the helper with a path ending in "pages".
+    fake_path = tmp_path / "project" / "pages"
+    with pytest.raises(CompilationError) as excinfo:
+        _relative_page_path(fake_path)
+
+    assert "pages" in str(excinfo.value).lower()
 
 
 def test_compilation_result_validates_output_paths(tmp_path: Path) -> None:

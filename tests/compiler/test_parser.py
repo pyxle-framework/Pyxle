@@ -371,137 +371,78 @@ def test_parse_inconsistent_dedent_raises(tmp_path: Path) -> None:
     with pytest.raises(CompilationError) as excinfo:
         PyxParser().parse(source)
 
-    assert "inconsistent" in str(excinfo.value).lower()
+    # The AST-driven parser surfaces Python's own SyntaxError message,
+    # which can be "unexpected indent" or "inconsistent" depending on
+    # the specific cause. Both contain the substring "indent".
+    msg = str(excinfo.value).lower()
+    assert "indent" in msg
 
 
 def test_parser_helper_methods_cover_branches() -> None:
-    parser = PyxParser()
+    """Cover the surviving internal helpers exposed by the parser module.
 
-    # Mode toggles
-    assert parser._detect_mode_toggle("") is None
-    assert parser._detect_mode_toggle("# --- Client Bundle ---") == "jsx"
-    assert parser._detect_mode_toggle("# regular comment") is None
-    assert parser._detect_mode_toggle("# --- Notes ---") is None
+    The original test exercised a constellation of line-based heuristics
+    (``_is_probable_python``, ``_is_probable_js``, ``_looks_like_js_import``
+    et al.) that no longer exist after the AST-driven rewrite. The
+    behaviors those helpers verified are now covered by behavior tests
+    further down (``TestMultiSectionAutoDetection``) that exercise the
+    same input patterns through the public ``parse_text`` API.
 
-    # Indentation tracking
-    indent_stack = [0]
-    expect = parser._update_python_indentation(indent_stack, 0, "async def loader():", 1, False, False)
-    assert expect is True
-    expect = parser._update_python_indentation(indent_stack, 4, "    return {}", 2, True, False)
-    assert expect is False
-    # Blank line short-circuit
-    assert parser._update_python_indentation(indent_stack, 4, "", 3, False, False) is False
-    # Dedent restoring stack with default zero
-    temp_stack = [4]
-    expect = parser._update_python_indentation(temp_stack, 0, "return {}", 4, False, False)
-    assert expect is False
-    # Continuation indent allowance
-    expect = parser._update_python_indentation(indent_stack, 8, "        42", 5, False, True)
-    assert expect is False
+    What remains here is direct coverage of the small set of pure
+    helpers that DID survive the rewrite — line-number mapping,
+    decorator detection, and newline normalization.
+    """
+    from pyxle.compiler.parser import (
+        _has_action_decorator,
+        _has_server_decorator,
+        _map_lineno,
+        _normalize_newlines,
+    )
 
-    # Python heuristics
-    assert parser._is_probable_python("if ready:", 0, False) is True
-    assert parser._is_probable_python("with open(path):", 0, False) is True
-    assert parser._is_probable_python("# comment", 0, False) is True
-    assert parser._is_probable_python("", 0, False) is False
-    assert parser._is_probable_python("if invalid", 0, False) is False
-    assert parser._is_probable_python("import React from 'react';", 0, False) is False
-    assert parser._is_probable_python("value = 1", 4, False) is True
-    assert parser._is_probable_python("value = 1", 0, False) is True
-    assert parser._is_probable_python("for item in items", 0, False) is False
-    assert parser._is_probable_python("Else:", 0, False) is True
-    assert parser._is_probable_python("value-with-hyphen = 1", 0, False) is False
+    # Newline normalization
+    assert _normalize_newlines("line1\r\nline2\rline3") == [
+        "line1",
+        "line2",
+        "line3",
+    ]
 
-    # JavaScript heuristics
-    assert parser._is_probable_js("export default function Foo() {}", 0) is True
-    assert parser._is_probable_js("const value = 1;", 0) is True
-    assert parser._is_probable_js("return value;", 0) is True
-    assert parser._is_probable_js("<div />", 0) is True
-    assert parser._is_probable_js("// comment", 0) is True
-    assert parser._is_probable_js("import { useState } from 'react';", 0) is True
-    assert parser._is_probable_js("await fetch('/api')", 0) is True
-    assert parser._is_probable_js("value", 1) is False
-    assert parser._is_probable_js("value;", 0) is True
-    assert parser._is_probable_js("", 0) is False
-
-    # Import detection helper
-    assert parser._looks_like_js_import("import type { Foo } from './foo';") is True
-    assert parser._looks_like_js_import("import styles from './foo.css';") is True
-    assert parser._looks_like_js_import("import util") is False
-    assert parser._looks_like_js_import("import styles;") is True
-    assert parser._looks_like_js_import("import {thing}") is True
-    assert parser._looks_like_js_import("importmodule") is False
-    assert parser._looks_like_js_import("import type Foo") is True
-
-    # Misc helpers
-    assert parser._line_opens_block("for item in items:") is True
-    assert parser._line_opens_block("value = 1") is False
-    assert parser._line_expects_indent("# comment") is False
-    assert parser._leading_spaces("  \tindent") == 6
-    assert parser._normalize_newlines("line1\r\nline2\rline3") == ["line1", "line2", "line3"]
-    assert parser._detect_mode_toggle("# --- JavaScript Section ---") == "jsx"
+    # BOM stripping
+    assert _normalize_newlines("\ufefffrom os import path\n") == [
+        "from os import path",
+        "",
+    ]
 
     # Line number mapping
-    assert parser._map_lineno(2, (10, 20, 30)) == 20
-    assert parser._map_lineno(5, (10, 20, 30)) == 30
-    assert parser._map_lineno(3, ()) == 3
-    assert parser._map_lineno(None, ()) is None
+    assert _map_lineno(2, (10, 20, 30)) == 20
+    assert _map_lineno(5, (10, 20, 30)) == 30
+    assert _map_lineno(3, ()) == 3
+    assert _map_lineno(None, ()) is None
 
-    # Decorator detection
-    decorators = [ast.Name(id="server")]
-    assert parser._has_server_decorator(decorators) is True
-    decorators_attr = [ast.Attribute(value=ast.Name(id="loader"), attr="server")]
-    assert parser._has_server_decorator(decorators_attr) is True
-    decorators_call = [ast.Call(func=ast.Name(id="server"), args=[], keywords=[])]
-    assert parser._has_server_decorator(decorators_call) is True
-    assert parser._has_server_decorator([]) is False
+    # @server decorator detection (bare, attribute, call form)
+    assert _has_server_decorator([ast.Name(id="server")]) is True
+    assert (
+        _has_server_decorator(
+            [ast.Attribute(value=ast.Name(id="loader"), attr="server")]
+        )
+        is True
+    )
+    assert (
+        _has_server_decorator(
+            [ast.Call(func=ast.Name(id="server"), args=[], keywords=[])]
+        )
+        is True
+    )
+    assert _has_server_decorator([]) is False
 
-    # Expression state helper edge cases
-    triple_match = parser._match_prefixed_string("r'''value", 0)
-    assert triple_match is not None
-    tracker, literal_index = triple_match
-    assert tracker.triple is True
-    idx, string_state = parser._consume_python_string("value'''rest", literal_index, tracker)
-    assert idx == len("value'''")
-    assert string_state is None
-    string_state, paren_depth, _, _, line_cont = parser._update_python_expression_state(
-        "value = (",
-        None,
-        0,
-        0,
-        0,
+    # @action decorator detection
+    assert _has_action_decorator([ast.Name(id="action")]) is True
+    assert (
+        _has_action_decorator(
+            [ast.Attribute(value=ast.Name(id="runtime"), attr="action")]
+        )
+        is True
     )
-    assert string_state is None
-    assert paren_depth == 1
-    assert line_cont is False
-    string_state, _, _, _, line_cont = parser._update_python_expression_state(
-        "continued \\",
-        None,
-        0,
-        0,
-        0,
-    )
-    assert string_state is None
-    assert line_cont is True
-    # Comments short-circuit expression scanning
-    string_state, _, _, _, _ = parser._update_python_expression_state(
-        "# comment",
-        None,
-        0,
-        0,
-        0,
-    )
-    assert string_state is None
-    # Prefixed triple-quoted strings transition into tracked state
-    string_state, _, _, _, _ = parser._update_python_expression_state(
-        'r"""unterminated',
-        None,
-        0,
-        0,
-        0,
-    )
-    assert string_state is not None
-    assert string_state.triple is True
+    assert _has_action_decorator([]) is False
 
 
 def test_parse_server_decorator_on_class_raises(tmp_path: Path) -> None:
@@ -819,3 +760,139 @@ def test_parse_triple_quoted_string_with_indented_content(tmp_path: Path) -> Non
     assert "<title>Test Page</title>" in result.head_elements[0]
     assert '<meta name="description" content="Test" />' in result.head_elements[0]
     assert "export default function Page" in result.jsx_code
+
+
+# ---------------------------------------------------------------------------
+# AST-driven multi-section detection (the user-requested feature)
+# ---------------------------------------------------------------------------
+
+
+class TestMultiSectionAutoDetection:
+    """The new parser supports arbitrary alternation of Python and JSX
+    blocks within a single ``.pyx`` file, without requiring fence markers.
+    """
+
+    def test_python_jsx_python_jsx_alternation(self):
+        """A file with imports → JSX helper → Python action → JSX export
+        is segmented correctly without any markers."""
+        result = PyxParser().parse_text(
+            "from pyxle.runtime import server, action\n"
+            "import os\n"
+            "\n"
+            "def helper():\n"
+            "    return 'hi'\n"
+            "\n"
+            "import React from 'react';\n"
+            "\n"
+            "function MyComp() {\n"
+            "    return <div />;\n"
+            "}\n"
+            "\n"
+            "@action\n"
+            "async def save_data(request):\n"
+            "    return {'ok': True}\n"
+            "\n"
+            "export default function Page() {\n"
+            "    return <div>Hello</div>;\n"
+            "}\n"
+        )
+        # Both Python sections show up in python_code.
+        assert "from pyxle.runtime import server, action" in result.python_code
+        assert "def helper" in result.python_code
+        assert "@action" in result.python_code
+        assert "async def save_data" in result.python_code
+        # Both JSX sections show up in jsx_code.
+        assert "import React from 'react';" in result.jsx_code
+        assert "function MyComp" in result.jsx_code
+        assert "export default function Page" in result.jsx_code
+        # Action is detected.
+        assert len(result.actions) == 1
+        assert result.actions[0].name == "save_data"
+
+    def test_jsx_first_then_python_then_jsx(self):
+        """JSX-first files are supported."""
+        result = PyxParser().parse_text(
+            "import React from 'react';\n"
+            "\n"
+            "function Helper() {\n"
+            "    return <span />;\n"
+            "}\n"
+            "\n"
+            "@server\n"
+            "async def loader(request):\n"
+            "    return {'x': 1}\n"
+            "\n"
+            "export default function Page() {\n"
+            "    return <Helper />;\n"
+            "}\n"
+        )
+        assert "import React from 'react';" in result.jsx_code
+        assert "function Helper" in result.jsx_code
+        assert "@server" in result.python_code
+        assert "async def loader" in result.python_code
+        assert "export default function Page" in result.jsx_code
+        assert result.loader is not None
+        assert result.loader.name == "loader"
+
+
+# ---------------------------------------------------------------------------
+# Modern Python language features
+# ---------------------------------------------------------------------------
+
+
+class TestModernPythonFeatures:
+    """Edge cases for newer Python syntax that the AST parser must handle."""
+
+    def test_walrus_operator_in_loader(self):
+        result = PyxParser().parse_text(
+            "@server\n"
+            "async def loader(request):\n"
+            "    if (n := request.params.get('n')) is not None:\n"
+            "        return {'n': n}\n"
+            "    return {}\n"
+            "\n"
+            "export default function P() { return <div />; }\n"
+        )
+        assert result.loader is not None
+        assert result.loader.name == "loader"
+
+    def test_match_statement_in_loader(self):
+        result = PyxParser().parse_text(
+            "@server\n"
+            "async def loader(request):\n"
+            "    match request.method:\n"
+            "        case 'GET':\n"
+            "            return {'verb': 'get'}\n"
+            "        case _:\n"
+            "            return {'verb': 'other'}\n"
+            "\n"
+            "export default function P() { return <div />; }\n"
+        )
+        assert result.loader is not None
+        assert "match request.method" in result.python_code
+
+    def test_async_generator_in_loader(self):
+        result = PyxParser().parse_text(
+            "async def gen():\n"
+            "    yield 1\n"
+            "    yield 2\n"
+            "\n"
+            "@server\n"
+            "async def loader(request):\n"
+            "    items = [x async for x in gen()]\n"
+            "    return {'items': items}\n"
+            "\n"
+            "export default function P() { return <div />; }\n"
+        )
+        assert result.loader is not None
+
+    def test_loader_with_positional_only_param(self):
+        result = PyxParser().parse_text(
+            "@server\n"
+            "async def loader(request, /):\n"
+            "    return {}\n"
+            "\n"
+            "export default function P() { return <div />; }\n"
+        )
+        assert result.loader is not None
+        assert result.loader.parameters == ("request",)

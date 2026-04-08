@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from textwrap import dedent
 
-from pyxle.compiler.parser import PyxParser
+from pyxle.compiler.parser import PyxParser, PyxParseResult
 from pyxle.compiler.writers import ArtifactWriter
 
 
@@ -96,6 +96,68 @@ def test_writer_loader_and_action_page(tmp_path: Path) -> None:
     assert len(result.metadata.actions) == 1
     assert result.metadata.actions[0].name == "save"
     assert result.metadata.loader_name == "load"
+
+
+def test_writer_to_bool_handles_string_attributes(tmp_path: Path) -> None:
+    """``ArtifactWriter`` accepts script declarations whose boolean
+    attributes arrive as strings (e.g. ``async="async"``) in addition
+    to true booleans. Babel's JSX extractor returns boolean attrs as
+    booleans most of the time, but when an explicit ``"true"``/``"false"``
+    string is used, ``to_bool`` must accept it."""
+    source = tmp_path / "pages" / "stringly.pyx"
+    source.parent.mkdir(parents=True)
+    source.write_text(
+        "import React from 'react';\n"
+        "export default function P() { return <div />; }\n",
+        encoding="utf-8",
+    )
+
+    # Construct a fake parse_result with script declarations using
+    # STRING-typed boolean attribute values.
+    parse_result = PyxParseResult(
+        python_code="",
+        jsx_code="export default function P() { return <div />; }\n",
+        loader=None,
+        python_line_numbers=(),
+        jsx_line_numbers=(1,),
+        head_elements=(),
+        head_is_dynamic=False,
+        script_declarations=(
+            {
+                "src": "https://example.com/sdk.js",
+                "strategy": "afterInteractive",
+                "async": "true",  # string-shaped boolean
+                "defer": "true",
+                "module": "false",
+                "noModule": "false",
+            },
+        ),
+        image_declarations=(
+            {
+                "src": "/hero.png",
+                "width": "800",
+                "height": "400",
+                "alt": "Hero",
+                "priority": "true",  # string-shaped boolean
+                "lazy": "false",
+            },
+        ),
+    )
+
+    writer = _make_writer(tmp_path)
+    result = writer.write(
+        source_path=source,
+        page_relative_path=Path("stringly.pyx"),
+        route_path="/stringly",
+        alternate_route_paths=None,
+        parse_result=parse_result,
+    )
+
+    assert len(result.metadata.scripts) == 1
+    assert result.metadata.scripts[0].async_ is True
+    assert result.metadata.scripts[0].defer is True
+    assert len(result.metadata.images) == 1
+    assert result.metadata.images[0].priority is True
 
 
 def test_writer_multiple_actions_in_metadata_json(tmp_path: Path) -> None:
