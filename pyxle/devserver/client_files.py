@@ -1050,15 +1050,254 @@ def _render_client_entry(settings: DevServerSettings) -> str:
               }).catch(() => {});
             }
 
+            // ── Navigation progress indicator ──────────────────────
+            //
+            // A fixed top-of-viewport horizontal bar that shows when
+            // client-side navigation takes longer than SHOW_DELAY_MS
+            // (150ms). Navigations served from the prefetch cache
+            // complete before the delay fires and never render the
+            // bar, so "instant" navs feel instant and "slow" navs
+            // get a progress indicator — the same UX pattern used by
+            // Turbo, Nuxt, Inertia, and every framework's nprogress
+            // plugin.
+            //
+            // State machine is hidden inside an IIFE so no globals
+            // leak. Integration: ``markNavigating(true/false)`` calls
+            // ``navProgress.start()`` / ``navProgress.complete()``,
+            // which are the only public surface.
+            //
+            // Opt-out: set ``window.__pyxle_disable_progress__ =
+            // true`` before the runtime loads, or set
+            // ``<html data-pyxle-progress="off">``.
+            const navProgress = (function initNavProgress() {
+              const SHOW_DELAY_MS = 150;
+              const TICK_MS = 400;
+              const TARGET_CAP = 0.9;
+              const DECAY = 0.15;
+              const ELEMENT_ID = '__pyxle_nav_progress__';
+              const STYLE_ID = '__pyxle_nav_progress_style__';
+
+              let pendingTimer = null;
+              let tickTimer = null;
+              let hideTimer = null;
+              let element = null;
+              let progress = 0;
+              let activeCount = 0;
+              let prefersReducedMotion = false;
+
+              function isDisabled() {
+                if (typeof window === 'undefined' || typeof document === 'undefined') {
+                  return true;
+                }
+                if (window.__pyxle_disable_progress__ === true) {
+                  return true;
+                }
+                const root = document.documentElement;
+                if (root && root.getAttribute('data-pyxle-progress') === 'off') {
+                  return true;
+                }
+                return false;
+              }
+
+              function ensureStyles() {
+                if (document.getElementById(STYLE_ID)) {
+                  return;
+                }
+                const style = document.createElement('style');
+                style.id = STYLE_ID;
+                // Max safe int z-index (same trick Turbo uses) keeps
+                // the bar above fixed headers, modals, and toasts.
+                // Customisable via CSS custom properties on <html>.
+                style.textContent = [
+                  ':root {',
+                  '  --pyxle-nav-progress-height: 3px;',
+                  '  --pyxle-nav-progress-color: linear-gradient(90deg, #10b981 0%, #06b6d4 100%);',
+                  '  --pyxle-nav-progress-shadow: 0 0 10px rgba(16, 185, 129, 0.5), 0 0 6px rgba(6, 182, 212, 0.4);',
+                  '}',
+                  '#' + ELEMENT_ID + ' {',
+                  '  position: fixed;',
+                  '  top: 0;',
+                  '  left: 0;',
+                  '  right: 0;',
+                  '  height: var(--pyxle-nav-progress-height);',
+                  '  background: var(--pyxle-nav-progress-color);',
+                  '  box-shadow: var(--pyxle-nav-progress-shadow);',
+                  '  transform-origin: 0 50%;',
+                  '  transform: scaleX(0);',
+                  '  opacity: 0;',
+                  '  pointer-events: none;',
+                  '  z-index: 2147483647;',
+                  '  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1), opacity 300ms ease-out;',
+                  '  will-change: transform, opacity;',
+                  '}',
+                  '@media (prefers-reduced-motion: reduce) {',
+                  '  #' + ELEMENT_ID + ' {',
+                  '    transition: opacity 150ms ease-out;',
+                  '  }',
+                  '}',
+                ].join('\\n');
+                (document.head || document.documentElement).appendChild(style);
+              }
+
+              function ensureElement() {
+                if (element && element.isConnected) {
+                  return element;
+                }
+                ensureStyles();
+                const existing = document.getElementById(ELEMENT_ID);
+                if (existing) {
+                  element = existing;
+                  return element;
+                }
+                element = document.createElement('div');
+                element.id = ELEMENT_ID;
+                element.setAttribute('role', 'progressbar');
+                element.setAttribute('aria-label', 'Loading page');
+                element.setAttribute('aria-valuemin', '0');
+                element.setAttribute('aria-valuemax', '100');
+                element.setAttribute('aria-valuenow', '0');
+                element.setAttribute('aria-hidden', 'true');
+                (document.body || document.documentElement).appendChild(element);
+                // Check prefers-reduced-motion once per creation.
+                if (typeof window.matchMedia === 'function') {
+                  try {
+                    prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                  } catch (err) {
+                    prefersReducedMotion = false;
+                  }
+                }
+                return element;
+              }
+
+              function setProgress(value) {
+                progress = Math.max(0, Math.min(1, value));
+                if (!element) return;
+                element.style.transform = 'scaleX(' + progress + ')';
+                element.setAttribute('aria-valuenow', String(Math.round(progress * 100)));
+              }
+
+              function showBar() {
+                const el = ensureElement();
+                el.style.opacity = '1';
+                el.setAttribute('aria-hidden', 'false');
+                progress = 0;
+                setProgress(prefersReducedMotion ? 0.3 : 0.08);
+                // After the browser commits the initial frame, ramp
+                // quickly to 30% so the first tick has meaningful
+                // visual progress even on fast connections.
+                if (!prefersReducedMotion) {
+                  requestAnimationFrame(() => {
+                    requestAnimationFrame(() => setProgress(0.3));
+                  });
+                }
+                startTicker();
+              }
+
+              function startTicker() {
+                stopTicker();
+                if (prefersReducedMotion) {
+                  // Under reduced motion we hold at 30% with no
+                  // ticking — the bar appears static until completion.
+                  return;
+                }
+                tickTimer = window.setInterval(function onTick() {
+                  // Decay easing: always crawl toward TARGET_CAP (0.9)
+                  // but never reach it, so completion can burst from
+                  // wherever we are to 1.0 in the final animation.
+                  const next = progress + (TARGET_CAP - progress) * DECAY;
+                  setProgress(next);
+                }, TICK_MS);
+              }
+
+              function stopTicker() {
+                if (tickTimer !== null) {
+                  window.clearInterval(tickTimer);
+                  tickTimer = null;
+                }
+              }
+
+              function complete() {
+                if (pendingTimer !== null) {
+                  window.clearTimeout(pendingTimer);
+                  pendingTimer = null;
+                }
+                stopTicker();
+                if (!element || element.style.opacity !== '1') {
+                  // Bar was never shown (instant nav). Nothing to do.
+                  return;
+                }
+                setProgress(1);
+                if (hideTimer !== null) {
+                  window.clearTimeout(hideTimer);
+                }
+                // Give the 200ms transform transition a moment to
+                // finish, then fade out. Total completion animation
+                // is ~500ms from complete() call to element removal.
+                hideTimer = window.setTimeout(function onFadeOut() {
+                  if (!element) return;
+                  element.style.opacity = '0';
+                  element.setAttribute('aria-hidden', 'true');
+                  hideTimer = window.setTimeout(function onReset() {
+                    if (element) {
+                      element.style.transform = 'scaleX(0)';
+                      element.setAttribute('aria-valuenow', '0');
+                    }
+                    hideTimer = null;
+                  }, 300);
+                }, 200);
+              }
+
+              function start() {
+                if (isDisabled()) {
+                  return;
+                }
+                activeCount += 1;
+                if (activeCount > 1) {
+                  // Overlapping nav — keep the existing bar in flight
+                  // rather than resetting. The second nav completing
+                  // alone will NOT hide the bar (complete() below).
+                  return;
+                }
+                // Schedule the show AFTER the delay so prefetched/
+                // cached navs that complete in <150ms never flash
+                // the bar.
+                if (pendingTimer !== null) {
+                  window.clearTimeout(pendingTimer);
+                }
+                pendingTimer = window.setTimeout(function onShow() {
+                  pendingTimer = null;
+                  showBar();
+                }, SHOW_DELAY_MS);
+              }
+
+              function finish() {
+                if (activeCount === 0) {
+                  return;
+                }
+                activeCount -= 1;
+                if (activeCount > 0) {
+                  // Other navigations still in flight — keep the bar.
+                  return;
+                }
+                complete();
+              }
+
+              return { start: start, finish: finish };
+            })();
+
             function markNavigating(active) {
               const root = document.documentElement;
-              if (!root) {
-                return;
+              if (root) {
+                if (active) {
+                  root.setAttribute('data-pyxle-navigation', '1');
+                } else {
+                  root.removeAttribute('data-pyxle-navigation');
+                }
               }
               if (active) {
-                root.setAttribute('data-pyxle-navigation', '1');
+                navProgress.start();
               } else {
-                root.removeAttribute('data-pyxle-navigation');
+                navProgress.finish();
               }
             }
 

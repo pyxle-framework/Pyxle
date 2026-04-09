@@ -156,6 +156,92 @@ def test_client_entry_omits_overlay_in_production(tmp_path: Path) -> None:
     assert "/__pyxle__/overlay" not in prod_entry
 
 
+def test_client_entry_includes_nav_progress_bar(tmp_path: Path) -> None:
+    """Client runtime ships a navigation progress bar IIFE that
+    ``markNavigating`` calls on start/finish. The bar is always
+    present (dev AND prod) and integrates transparently — no user
+    opt-in required."""
+    settings = create_project(tmp_path)
+    entry = _render_client_entry(settings)
+
+    # Module initialised as a top-level const IIFE — keeps state
+    # encapsulated so nothing leaks onto window.
+    assert "const navProgress = (function initNavProgress()" in entry
+    assert "return { start: start, finish: finish };" in entry
+
+    # Stable DOM ids — users can style the bar by targeting these
+    # directly, so changing them is a breaking change.
+    assert "__pyxle_nav_progress__" in entry
+    assert "__pyxle_nav_progress_style__" in entry
+
+    # CSS custom properties for user overrides.
+    assert "--pyxle-nav-progress-height" in entry
+    assert "--pyxle-nav-progress-color" in entry
+    assert "--pyxle-nav-progress-shadow" in entry
+
+    # markNavigating is wired up to the progress bar on both
+    # edges of every navigation.
+    assert "navProgress.start()" in entry
+    assert "navProgress.finish()" in entry
+
+
+def test_client_entry_nav_progress_includes_opt_out_hooks(tmp_path: Path) -> None:
+    """Two opt-out mechanisms must be present: a window global
+    checked lazily (so it can be set before the runtime loads) and
+    a data attribute on <html> (so SSR-side rendering can disable
+    it per-page without JS)."""
+    settings = create_project(tmp_path)
+    entry = _render_client_entry(settings)
+
+    assert "window.__pyxle_disable_progress__ === true" in entry
+    assert "data-pyxle-progress" in entry
+    assert "'off'" in entry  # the attribute value that disables the bar
+
+
+def test_client_entry_nav_progress_accessibility(tmp_path: Path) -> None:
+    """The progress bar element carries ARIA progressbar semantics
+    so screen readers announce navigation as 'Loading page' with a
+    live 0-100 value."""
+    settings = create_project(tmp_path)
+    entry = _render_client_entry(settings)
+
+    assert "'role', 'progressbar'" in entry
+    assert "'aria-label', 'Loading page'" in entry
+    assert "'aria-valuemin', '0'" in entry
+    assert "'aria-valuemax', '100'" in entry
+    assert "aria-valuenow" in entry
+
+
+def test_client_entry_nav_progress_respects_reduced_motion(tmp_path: Path) -> None:
+    """Users with `prefers-reduced-motion: reduce` see a static bar
+    (snap to 30%, no ticking decay) instead of animated progress."""
+    settings = create_project(tmp_path)
+    entry = _render_client_entry(settings)
+
+    assert "prefers-reduced-motion: reduce" in entry
+    assert "prefersReducedMotion" in entry
+
+
+def test_client_entry_nav_progress_is_present_in_both_dev_and_prod(tmp_path: Path) -> None:
+    """The progress bar is a user-experience feature, not a debug
+    tool — it must ship in both dev and production builds."""
+    root = tmp_path / "project"
+    (root / "pages").mkdir(parents=True)
+    (root / "public").mkdir()
+
+    dev_entry = _render_client_entry(
+        DevServerSettings.from_project_root(root, debug=True)
+    )
+    prod_entry = _render_client_entry(
+        DevServerSettings.from_project_root(root, debug=False)
+    )
+
+    for entry in (dev_entry, prod_entry):
+        assert "const navProgress = (function initNavProgress()" in entry
+        assert "navProgress.start()" in entry
+        assert "navProgress.finish()" in entry
+
+
 def test_vite_config_aliases_cover_client_runtime(tmp_path: Path) -> None:
     settings = create_project(tmp_path)
     vite_config = _render_vite_config(settings)
