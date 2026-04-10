@@ -338,7 +338,7 @@ def _make_page_handler(
     async def handler(request: Request):  # pragma: no cover - thin wrapper
         wants_navigation_payload = request.headers.get(_NAVIGATION_HEADER) == "1"
         if wants_navigation_payload:
-            return await build_page_navigation_response(
+            response = await build_page_navigation_response(
                 request=request,
                 settings=settings,
                 page=route,
@@ -346,8 +346,18 @@ def _make_page_handler(
                 overlay=overlay,
                 error_boundaries=error_boundaries,
             )
+            # Navigation JSON MUST be cached separately from the HTML
+            # response for the same URL. Without Vary, the browser's
+            # HTTP cache can serve stale JSON when the user returns to
+            # a backgrounded tab (the reload request omits the nav
+            # header, but the cache matches on URL alone). `no-store`
+            # prevents caching entirely — the Pyxle client already has
+            # its own in-memory navigationCache for dedup.
+            response.headers["Vary"] = _NAVIGATION_HEADER
+            response.headers["Cache-Control"] = "no-store"
+            return response
 
-        return await build_page_response(
+        response = await build_page_response(
             request=request,
             settings=settings,
             page=route,
@@ -355,6 +365,14 @@ def _make_page_handler(
             overlay=overlay,
             error_boundaries=error_boundaries,
         )
+        # HTML page responses also carry Vary so a browser that
+        # cached both the HTML and a nav-JSON payload for the same
+        # URL knows they are distinct entries. `private, no-cache`
+        # allows conditional caching with revalidation but prevents
+        # shared proxies from serving one user's response to another.
+        response.headers["Vary"] = _NAVIGATION_HEADER
+        response.headers["Cache-Control"] = "private, no-cache"
+        return response
 
     handler.__name__ = f"page_{route.module_key.replace('.', '_')}"
     return handler

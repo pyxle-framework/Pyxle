@@ -316,3 +316,22 @@ def test_build_public_env_defines_escapes_special_chars(monkeypatch) -> None:
     assert "define:" in result
     # JSON encoding should escape the double quotes
     assert r'\"World\"' in result
+
+
+# ---------------------------------------------------------------------------
+# BFCache restore handler
+# ---------------------------------------------------------------------------
+
+
+def test_client_entry_includes_bfcache_pageshow_handler(tmp_path: Path) -> None:
+    """The client runtime registers a ``pageshow`` listener so that a
+    BFCache restore triggers ``router.refresh()``. Without this a user
+    who backgrounds a tab for a long time and comes back can see stale
+    content (or raw JSON if the browser's HTTP cache confused the
+    HTML/JSON variants for the same URL)."""
+    settings = create_project(tmp_path)
+    entry = _render_client_entry(settings)
+
+    assert "addEventListener('pageshow'" in entry or 'addEventListener("pageshow"' in entry
+    assert "event.persisted" in entry
+    assert "router.refresh()" in entry

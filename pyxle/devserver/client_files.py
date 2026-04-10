@@ -1591,6 +1591,21 @@ def _render_client_entry(settings: DevServerSettings) -> str:
             document.addEventListener('click', handleLinkClick);
             document.addEventListener('mouseenter', handleLinkHover, { capture: true });
             window.addEventListener('popstate', handlePopState);
+
+            // BFCache restore handler. When the user backgrounds a tab and
+            // comes back after a long time, the browser may restore the
+            // page from its back-forward cache. The restored DOM is stale
+            // (loader data may have changed) and — critically — if the
+            // browser served a cached navigation-JSON response instead of
+            // fresh HTML during restoration, the user sees raw JSON. A
+            // refresh() call re-fetches the current page's loader data
+            // from the server and re-renders the component, so the page
+            // is always correct after a BFCache restore.
+            window.addEventListener('pageshow', function onPageShow(event) {
+              if (event.persisted) {
+                router.refresh();
+              }
+            });
             """
         ).strip()
         + "\n"

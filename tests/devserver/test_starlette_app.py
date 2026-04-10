@@ -150,6 +150,59 @@ def test_build_page_router_invokes_build_page_response(project: DevServerSetting
     assert captured == [("/", None), ("/posts/{id}", None)]
 
 
+def test_page_handler_sets_vary_and_cache_control_headers(
+    project: DevServerSettings, monkeypatch
+) -> None:
+    """Page handlers set ``Vary: x-pyxle-navigation`` on both HTML
+    and JSON responses so the browser's HTTP cache stores them as
+    separate entries for the same URL. Without this, a browser that
+    served cached navigation JSON during a tab-restore would show
+    raw JSON to the user instead of the HTML page.
+
+    HTML responses also get ``Cache-Control: private, no-cache``.
+    JSON nav responses get ``Cache-Control: no-store``."""
+    build_once(project)
+    registry = load_metadata_registry(project)
+    table = build_route_table(registry)
+
+    async def fake_html(*, request, settings, page, renderer, overlay=None, **_kw):
+        return PlainTextResponse(f"HTML:{page.path}")
+
+    async def fake_json(*, request, settings, page, renderer, overlay=None, **_kw):
+        from starlette.responses import JSONResponse
+
+        return JSONResponse({"ok": True, "routePath": page.path})
+
+    monkeypatch.setattr(
+        "pyxle.devserver.starlette_app.build_page_response",
+        fake_html,
+    )
+    monkeypatch.setattr(
+        "pyxle.devserver.starlette_app.build_page_navigation_response",
+        fake_json,
+    )
+
+    router = build_page_router(
+        table.pages, settings=project, renderer=object()  # type: ignore[arg-type]
+    )
+    app = Starlette()
+    app.router.routes.extend(router.routes)
+    client = TestClient(app)
+
+    # HTML response (no nav header)
+    html_resp = client.get("/")
+    assert html_resp.status_code == 200
+    assert html_resp.headers["vary"] == "x-pyxle-navigation"
+    assert "private" in html_resp.headers.get("cache-control", "")
+    assert "no-cache" in html_resp.headers.get("cache-control", "")
+
+    # JSON nav response (with nav header)
+    json_resp = client.get("/", headers={"x-pyxle-navigation": "1"})
+    assert json_resp.status_code == 200
+    assert json_resp.headers["vary"] == "x-pyxle-navigation"
+    assert "no-store" in json_resp.headers.get("cache-control", "")
+
+
 def test_build_static_files_mount_serves_public_directory(project: DevServerSettings) -> None:
     mount = build_static_files_mount(project)
 
