@@ -42,7 +42,7 @@ def run_build(
     """Execute the full production build pipeline.
 
     Steps:
-    1. Compile all .pyx pages and copy API modules into .pyxle-build
+    1. Compile all .pyxl pages and copy API modules into .pyxle-build
     2. Run ``npm run build`` (Vite + Tailwind) to produce hashed client bundles
     3. Copy server modules, metadata, public assets, and client bundles to dist/
     4. Generate a page-manifest.json mapping routes to their assets
@@ -137,6 +137,7 @@ def _run_npm_build(project_root: Path, logger: Any, *, settings: DevServerSettin
             capture_output=True,
             text=True,
             env=env,
+            start_new_session=True,
         )
     except FileNotFoundError:
         _log(logger, "warning", "npx/vite not found; skipping client build")
@@ -154,6 +155,7 @@ def _run_npm_script(project_root: Path, script: str, logger: Any, *, required: b
             check=True,
             capture_output=True,
             text=True,
+            start_new_session=True,
         )
     except FileNotFoundError:
         if required:

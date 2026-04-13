@@ -701,7 +701,7 @@ class TestJsStateAdvanceEdgeCases:
 
 
 class TestRealWorldPyxFixtures:
-    """Run a battery of realistic .pyx fixtures through the parser to
+    """Run a battery of realistic .pyxl fixtures through the parser to
     exercise the metadata extraction code paths in normal operation.
     Each fixture covers a different combination of loader, actions, and
     HEAD configurations."""

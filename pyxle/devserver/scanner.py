@@ -73,7 +73,7 @@ def scan_source_tree(settings: DevServerSettings) -> List[SourceFile]:
             continue
 
         suffix = file_path.suffix.lower()
-        if suffix == ".pyx":
+        if suffix == ".pyxl":
             kind = SourceKind.PAGE
         elif suffix == ".py":
             parts = relative_path.parts

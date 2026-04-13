@@ -1,4 +1,4 @@
-"""Core compilation routines for `.pyx` files."""
+"""Core compilation routines for `.pyxl` files."""
 
 from __future__ import annotations
 
@@ -19,10 +19,10 @@ def compile_file(
     client_root: Path | None = None,
     server_root: Path | None = None,
 ) -> CompilationResult:
-    """Compile a single `.pyx` file into client/server artifacts."""
+    """Compile a single `.pyxl` file into client/server artifacts."""
 
-    if source_path.suffix != ".pyx":
-        raise CompilationError("Only `.pyx` files can be compiled", None)
+    if source_path.suffix != ".pyxl":
+        raise CompilationError("Only `.pyxl` files can be compiled", None)
 
     source_path = source_path.resolve()
     build_root = build_root.resolve()

@@ -15,8 +15,8 @@ from pyxle.ssr.template import render_document, render_error_document
 def page_route(tmp_path: Path) -> PageRoute:
     return PageRoute(
         path="/",
-        source_relative_path=Path("index.pyx"),
-        source_absolute_path=tmp_path / "pages" / "index.pyx",
+        source_relative_path=Path("index.pyxl"),
+        source_absolute_path=tmp_path / "pages" / "index.pyxl",
         server_module_path=tmp_path / "server" / "index.py",
         client_module_path=tmp_path / "client" / "index.jsx",
         metadata_path=tmp_path / "metadata" / "index.json",
@@ -126,8 +126,8 @@ def test_render_document_uses_dynamic_route_asset_path(tmp_path: Path) -> None:
 
     dynamic_page = PageRoute(
         path="/posts/{id}",
-        source_relative_path=Path("posts/[id].pyx"),
-        source_absolute_path=tmp_path / "pages" / "posts" / "[id].pyx",
+        source_relative_path=Path("posts/[id].pyxl"),
+        source_absolute_path=tmp_path / "pages" / "posts" / "[id].pyxl",
         server_module_path=tmp_path / "server" / "posts" / "[id].py",
         client_module_path=tmp_path / "client" / "posts" / "[id].jsx",
         metadata_path=tmp_path / "metadata" / "posts" / "[id].json",
@@ -368,7 +368,11 @@ def test_render_error_document_dev_mode_includes_details(
 
     assert "Server Render Failed" in html
     assert "_SecretError" in html
-    assert "DB row 12345 / api_key=sk_live_abc123" in html
+    # The raw DB row ID is still visible (not a secret pattern), but
+    # api_key=... is redacted by the sensitive-pattern filter.
+    assert "DB row 12345" in html
+    assert "sk_live_abc123" not in html
+    assert "[REDACTED_SECRET]" in html
     assert page_route.path in html
     assert "@vite/client" in html
 

@@ -1,6 +1,6 @@
 # Pyxle Documentation
 
-Pyxle is a Python-first full-stack web framework that brings the Next.js developer experience to the Python ecosystem. Write server logic in Python, UI in React, and ship them together in `.pyx` files.
+Pyxle is a Python-first full-stack web framework that brings the Next.js developer experience to the Python ecosystem. Write server logic in Python, UI in React, and ship them together in `.pyxl` files.
 
 **Current version:** 0.1.0 (beta)
 
@@ -18,7 +18,7 @@ New to Pyxle? Start here.
 
 The fundamentals of how Pyxle works.
 
-- [`.pyx` Files](core-concepts/pyx-files.md) -- How Python and React coexist in one file
+- [`.pyxl` Files](core-concepts/pyxl-files.md) -- How Python and React coexist in one file
 - [Routing](core-concepts/routing.md) -- File-based routing, dynamic segments, catch-all routes
 - [Data Loading](core-concepts/data-loading.md) -- `@server` loaders and passing props to components
 - [Server Actions](core-concepts/server-actions.md) -- `@action` mutations, `<Form>`, and `useAction`
@@ -33,7 +33,7 @@ Practical guides for common tasks.
 - [API Routes](guides/api-routes.md) -- Building JSON APIs under `pages/api/`
 - [Middleware](guides/middleware.md) -- Application-level and route-level middleware
 - [Environment Variables](guides/environment-variables.md) -- `.env` files, `PYXLE_PUBLIC_` prefix, and config overrides
-- [Error Handling](guides/error-handling.md) -- `LoaderError`, `ActionError`, `error.pyx`, and `not-found.pyx`
+- [Error Handling](guides/error-handling.md) -- `LoaderError`, `ActionError`, `error.pyxl`, and `not-found.pyxl`
 - [Client Components](guides/client-components.md) -- `<Script>`, `<Image>`, `<ClientOnly>`, and `<Link>`
 - [Security](guides/security.md) -- CSRF protection, CORS, and HEAD sanitisation
 - [Deployment](guides/deployment.md) -- `pyxle build`, `pyxle serve`, and hosting in production
@@ -54,8 +54,8 @@ The complete architecture handbook -- a guided tour of how Pyxle is built on the
 
 - [Architecture overview](architecture/README.md) -- Start here. Index of every architecture doc.
 - [Request lifecycle](architecture/overview.md) -- One HTTP request, end to end, in one read.
-- [The .pyx file format](architecture/pyx-files.md) -- Why Pyxle invented a new file extension.
-- [The parser](architecture/parser.md) -- How `.pyx` files get split into Python and JSX using only `ast.parse`. The most sensitive code in the framework.
+- [The .pyxl file format](architecture/pyxl-files.md) -- Why Pyxle invented a new file extension.
+- [The parser](architecture/parser.md) -- How `.pyxl` files get split into Python and JSX using only `ast.parse`. The most sensitive code in the framework.
 - [The compiler](architecture/compiler.md) -- How parsed pages become `.py` + `.jsx` + `.json` artifacts.
 - [Routing](architecture/routing.md) -- File-based routing, dynamic segments, catch-all routes, layouts, error boundaries.
 - [The dev server](architecture/dev-server.md) -- Starlette + Vite + the file watcher + the incremental builder + the WebSocket overlay.

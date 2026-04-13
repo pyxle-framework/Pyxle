@@ -1,11 +1,11 @@
-"""Error boundary resolution for ``error.pyx`` and ``not-found.pyx`` pages.
+"""Error boundary resolution for ``error.pyxl`` and ``not-found.pyxl`` pages.
 
 Pyxle supports file-convention error pages inspired by Next.js:
 
-* ``pages/error.pyx``               — root error boundary
-* ``pages/dashboard/error.pyx``     — catches errors within ``/dashboard/*``
-* ``pages/not-found.pyx``           — root 404 page
-* ``pages/dashboard/not-found.pyx`` — catches 404s within ``/dashboard/*``
+* ``pages/error.pyxl``               — root error boundary
+* ``pages/dashboard/error.pyxl``     — catches errors within ``/dashboard/*``
+* ``pages/not-found.pyxl``           — root 404 page
+* ``pages/dashboard/not-found.pyxl`` — catches 404s within ``/dashboard/*``
 
 Error boundaries are resolved by walking **up** the directory tree from the
 failing route until a matching error/not-found page is found. The closest
@@ -19,8 +19,8 @@ from pathlib import PurePosixPath
 from typing import Any, Optional, Sequence
 
 
-_ERROR_FILENAMES = frozenset({"error.pyx"})
-_NOT_FOUND_FILENAMES = frozenset({"not-found.pyx"})
+_ERROR_FILENAMES = frozenset({"error.pyxl"})
+_NOT_FOUND_FILENAMES = frozenset({"not-found.pyxl"})
 _BOUNDARY_FILENAMES = _ERROR_FILENAMES | _NOT_FOUND_FILENAMES
 
 
@@ -31,12 +31,12 @@ def is_error_boundary_file(relative_path_posix: str) -> bool:
 
 
 def is_error_page(relative_path_posix: str) -> bool:
-    """Return True if the source file is an ``error.pyx``."""
+    """Return True if the source file is an ``error.pyxl``."""
     return PurePosixPath(relative_path_posix).name.lower() in _ERROR_FILENAMES
 
 
 def is_not_found_page(relative_path_posix: str) -> bool:
-    """Return True if the source file is a ``not-found.pyx``."""
+    """Return True if the source file is a ``not-found.pyxl``."""
     return PurePosixPath(relative_path_posix).name.lower() in _NOT_FOUND_FILENAMES
 
 
@@ -49,8 +49,8 @@ class ErrorBoundaryRegistry:
 
     Example::
 
-        error_pages = {".": <root error.pyx route>, "dashboard": <dashboard error.pyx route>}
-        not_found_pages = {".": <root not-found.pyx route>}
+        error_pages = {".": <root error.pyxl route>, "dashboard": <dashboard error.pyxl route>}
+        not_found_pages = {".": <root not-found.pyxl route>}
     """
 
     error_pages: dict[str, Any]
@@ -65,11 +65,11 @@ class ErrorBoundaryRegistry:
         return bool(self.not_found_pages)
 
     def find_error_boundary(self, route_path: str) -> Optional[Any]:
-        """Find the nearest ``error.pyx`` for *route_path* by walking up the tree."""
+        """Find the nearest ``error.pyxl`` for *route_path* by walking up the tree."""
         return _walk_up(route_path, self.error_pages)
 
     def find_not_found_boundary(self, route_path: str) -> Optional[Any]:
-        """Find the nearest ``not-found.pyx`` for *route_path*."""
+        """Find the nearest ``not-found.pyxl`` for *route_path*."""
         return _walk_up(route_path, self.not_found_pages)
 
 

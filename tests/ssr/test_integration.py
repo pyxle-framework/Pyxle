@@ -24,12 +24,12 @@ def test_ssr_integration_renders_pages_with_loader(tmp_path: Path) -> None:
     ensure_test_node_modules(project_root)
 
     _write(
-        settings.pages_dir / "index.pyx",
+        settings.pages_dir / "index.pyxl",
         """\n\nHEAD = [\n    \"<title>SSR Integration</title>\",\n    '<meta name=\"description\" content=\"SSR integration test\" />',\n]\n\ndef server(fn):\n    return fn\n\n@server\nasync def load_home(request):\n    return ({\n        \"message\": \"Hello from SSR\",\n        \"query\": request.query_params.get(\"hello\", \"world\"),\n    }, 201)\n\n# --- JavaScript/PSX (Client + Server) ---\n\nimport React from 'react';\n\nexport default function Home({ data }) {\n    return (\n        <main data-query={data.query}>\n            <h1>{data.message}</h1>\n        </main>\n    );\n}\n""",
     )
 
     _write(
-        settings.pages_dir / "posts/[id].pyx",
+        settings.pages_dir / "posts/[id].pyxl",
         """import React from 'react';\n\nexport default function Post({ data }) {\n    return <section data-route=\"post\">Static post</section>;\n}\n""",
     )
 
@@ -63,17 +63,17 @@ def test_ssr_integration_composes_layouts_and_templates(tmp_path: Path) -> None:
     ensure_test_node_modules(project_root)
 
     _write(
-        settings.pages_dir / "layout.pyx",
+        settings.pages_dir / "layout.pyxl",
         """import React from 'react';\nimport { Slot } from 'pyxle/client';\n\nexport default function SiteLayout({ children, data }) {\n    return (\n        <div className=\"site-layout\">\n            <header data-layout=\"root\">\n                <Slot name=\"hero\" props={{ data }} fallback={<p>layout fallback</p>} />\n            </header>\n            <main>{children}</main>\n        </div>\n    );\n}\n\nexport const slots = {\n    hero: ({ data }) => <h1 data-slot=\"layout\">{data.page?.title}</h1>,\n};\n""",
     )
 
     _write(
-        settings.pages_dir / "blog/template.pyx",
+        settings.pages_dir / "blog/template.pyxl",
         """import React from 'react';\nimport { Slot } from 'pyxle/client';\n\nexport default function BlogTemplate({ children, data }) {\n    return (\n        <section className=\"blog-template\">\n            <div data-wrapper=\"template\">\n                <Slot name=\"hero\" props={{ data }} fallback={<p>template fallback</p>} />\n            </div>\n            <article>{children}</article>\n        </section>\n    );\n}\n\nexport const slots = {\n    hero: ({ data }) => <h2 data-slot=\"template\">{data.page?.intro}</h2>,\n};\n""",
     )
 
     _write(
-        settings.pages_dir / "blog/index.pyx",
+        settings.pages_dir / "blog/index.pyxl",
         """from pyxle.runtime import server\n\n@server\nasync def load_blog(request):\n    return {\n        \"page\": {\n            \"title\": \"Nested Layouts\",\n            \"intro\": \"Preview template fallbacks in action\",\n        },\n        \"post\": {\n            \"title\": \"Nested slots\",\n        },\n    }\n\nimport React from 'react';\n\nexport const slots = {\n    hero: ({ data }) => <p data-slot=\"page\">{data.post.title}</p>,\n};\n\nexport default function BlogPage({ data }) {\n    return (\n        <div data-leaf=\"blog\">\n            <strong>{data.post.title}</strong>\n        </div>\n    );\n}\n""",
     )
 

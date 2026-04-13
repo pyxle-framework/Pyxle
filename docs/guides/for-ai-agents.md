@@ -47,7 +47,7 @@ Now watch what the same feature looks like in Pyxle.
 Here's the entire "list users and delete them" feature in Pyxle:
 
 ```python
-# pages/users.pyx
+# pages/users.pyxl
 from myapp.db import fetch_users, delete_user
 
 @server
@@ -178,18 +178,18 @@ dict you return becomes the prop on the React side. That's all.
 ### 4. Conventional file layout is the routing table
 
 There is no `urls.py`, no `routes.ts`, no route decorators. If
-you have `pages/users/[id].pyx`, the route is `/users/{id}`. The
+you have `pages/users/[id].pyxl`, the route is `/users/{id}`. The
 agent doesn't have to open a router file to learn what routes
 exist — it can `ls pages/` and be done.
 
 ```
 pages/
-├── index.pyx            → /
-├── users.pyx            → /users
-├── users/[id].pyx       → /users/{id}
+├── index.pyxl            → /
+├── users.pyxl            → /users
+├── users/[id].pyxl       → /users/{id}
 ├── admin/
-│   ├── layout.pyx       → (wraps everything under /admin/*)
-│   └── stats.pyx        → /admin/stats
+│   ├── layout.pyxl       → (wraps everything under /admin/*)
+│   └── stats.pyxl        → /admin/stats
 └── api/
     └── health.py        → /api/health
 ```
@@ -204,13 +204,13 @@ text and the agent has to parse them. Pyxle's `check` command
 prints diagnostics with a rigid, machine-friendly shape:
 
 ```
-ℹ️  Checked 28 .pyx file(s) in my-app/
+ℹ️  Checked 28 .pyxl file(s) in my-app/
   error: [python] line 2: @server loader must accept a `request` argument
-    --> pages/users.pyx
+    --> pages/users.pyxl
   error: [jsx] line 8:10: Unterminated JSX contents
-    --> pages/settings.pyx
+    --> pages/settings.pyxl
   error: [python] line 1: unterminated string literal (detected at line 1)
-    --> pages/broken.pyx
+    --> pages/broken.pyxl
 ❌ Check failed with 3 error(s)
 ```
 
@@ -295,7 +295,7 @@ of inferring framework behaviour from source code.
 
 Specifically:
 
-- **[The parser](../architecture/parser.md)** explains how `.pyx`
+- **[The parser](../architecture/parser.md)** explains how `.pyxl`
   files are split into Python and JSX. An agent debugging a
   parse issue can read this once and know exactly what's happening.
 - **[Routing](../architecture/routing.md)** has a complete table
@@ -321,7 +321,7 @@ Pyxle generates artifacts into `.pyxle-build/` during compilation,
 but **the agent never touches them**. They're not checked into
 git, they're not imported from user code, and the only
 interaction with them is running `pyxle dev` or `pyxle build`.
-The agent edits `pages/foo.pyx`, and that's the only file that
+The agent edits `pages/foo.pyxl`, and that's the only file that
 matters for that feature.
 
 ---
@@ -366,7 +366,7 @@ verify the edits across files.
 The agent creates **one file**:
 
 ```python
-# pages/posts/[id].pyx
+# pages/posts/[id].pyxl
 from myapp.db import get_post, delete_post
 
 @server
@@ -461,10 +461,10 @@ running app matches the state of the source tree at all times.
 Pyxle's error messages are written to be parseable by a regex:
 
 - `[section] line N: message`
-- `  --> path/to/file.pyx`
+- `  --> path/to/file.pyxl`
 
 Column information is included where relevant. Line numbers map
-back to the original `.pyx` source (not the generated `.py` or
+back to the original `.pyxl` source (not the generated `.py` or
 `.jsx` artifacts), so when the agent goes to fix the error, it
 can target the right line directly.
 
@@ -558,11 +558,11 @@ Honesty builds trust. Here's where Pyxle isn't the right choice:
   inherently complex. The agent-first win is proportional to
   how much of a feature lives in the Python half. For
   server-heavy apps (CRUD screens, dashboards, admin panels,
-  data apps, RAG UIs, internal tools), one `.pyx` file really
+  data apps, RAG UIs, internal tools), one `.pyxl` file really
   can replace five or six files in a traditional stack. For
   apps where the UI *is* the product (drawing tools, rich
   editors, complex design surfaces, heavy client-side state),
-  the JSX section of each `.pyx` file will still be a full
+  the JSX section of each `.pyxl` file will still be a full
   React component tree, and the agent still has to reason
   about the same React complexity. Pyxle helps there too — it's
   real React underneath — but the savings are smaller, and the
@@ -584,12 +584,12 @@ agent the essentials of your app. Something like:
 # CLAUDE.md
 
 This is a Pyxle application. Read the framework conventions at
-https://pyxle.dev/docs/core-concepts/pyx-files before making any
+https://pyxle.dev/docs/core-concepts/pyxl-files before making any
 changes.
 
 ## Project structure
 
-- `pages/` — the route tree. Each `.pyx` file is one page.
+- `pages/` — the route tree. Each `.pyxl` file is one page.
 - `pages/api/` — JSON API routes (plain `.py` files).
 - `myapp/db.py` — database access layer (SQLAlchemy).
 - `myapp/models.py` — SQLAlchemy models.

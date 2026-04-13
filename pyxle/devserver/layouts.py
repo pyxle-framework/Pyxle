@@ -38,9 +38,9 @@ def compose_layout_templates(settings: DevServerSettings) -> None:
 
 def _iter_page_metadata(metadata_dir: Path) -> Iterable[tuple[Path, Path]]:
     for metadata_path in sorted(metadata_dir.rglob("*.json")):
-        relative_page = metadata_path.relative_to(metadata_dir).with_suffix(".pyx")
+        relative_page = metadata_path.relative_to(metadata_dir).with_suffix(".pyxl")
         name = relative_page.name.lower()
-        if name in {"layout.pyx", "template.pyx"}:
+        if name in {"layout.pyxl", "template.pyxl"}:
             continue
         yield metadata_path, relative_page
 

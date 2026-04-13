@@ -91,7 +91,7 @@ Under the hood:
    shipped with `pyxle-framework`.
 3. **Copies the template files** into the new directory using
    `shutil.copytree`. The template includes:
-   - `pages/index.pyx` — a working "Hello, Pyxle" page
+   - `pages/index.pyxl` — a working "Hello, Pyxle" page
    - `pages/api/pulse.py` — a sample API route
    - `package.json` — Vite + React 18 + Tailwind dependencies
    - `pyxle.config.json` — minimal config (`{"middleware": []}`)
@@ -294,13 +294,13 @@ linter / pre-commit hook command.
 
 ```
 $ pyxle check
-ℹ️  Checked 28 .pyx file(s) in my-app/
+ℹ️  Checked 28 .pyxl file(s) in my-app/
   error: [python] line 1: invalid syntax
-    --> pages/_errors_python_syntax/bad-keyword.pyx
+    --> pages/_errors_python_syntax/bad-keyword.pyxl
   error: [python] line 2: @server loader must accept a `request` argument
-    --> pages/_errors_python_validation/missing-request.pyx
+    --> pages/_errors_python_validation/missing-request.pyxl
   error: [jsx] line 1: JSX syntax error: Unexpected token (4:17)
-    --> pages/_errors_jsx_syntax/invalid-expression.pyx
+    --> pages/_errors_jsx_syntax/invalid-expression.pyxl
   ...
 ❌ Check failed with 14 error(s)
 ```
@@ -312,7 +312,7 @@ $ pyxle check
    parse and pass schema validation.
 3. **Node.js dependencies are present.** `node_modules/` should
    exist (warning if missing).
-4. **Every `.pyx` file parses cleanly.** Both Python and JSX halves.
+4. **Every `.pyxl` file parses cleanly.** Both Python and JSX halves.
 
 ### Tolerant mode
 
@@ -320,7 +320,7 @@ The fourth check is the interesting one. `pyxle check` runs the
 parser in **tolerant mode**:
 
 ```python
-result = parser.parse(pyx_file, tolerant=True, validate_jsx=True)
+result = parser.parse(pyxl_file, tolerant=True, validate_jsx=True)
 for diag in result.diagnostics:
     diagnostics.append(...)
 ```
@@ -344,7 +344,7 @@ Each per-file parse is wrapped in a `try/except`:
 
 ```python
 try:
-    result = parser.parse(pyx_file, tolerant=True, validate_jsx=True)
+    result = parser.parse(pyxl_file, tolerant=True, validate_jsx=True)
 except Exception as exc:
     diagnostics.append((rel_path, f"[python] parser crashed: {type(exc).__name__}: {exc}"))
     continue
@@ -412,7 +412,7 @@ diagnostics with file path and line number in a consistent way:
 
 ```
   error: [python] line 5: @server loader must be declared as async
-    --> pages/sync-loader.pyx
+    --> pages/sync-loader.pyxl
 ```
 
 This is the format `pyxle check` uses, but it's available to any

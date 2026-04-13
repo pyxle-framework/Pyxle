@@ -11,12 +11,12 @@ Pyxle"* heading.
 
 ---
 
-## The starting point: one `.pyx` file
+## The starting point: one `.pyxl` file
 
 Here's the file we're going to render, simplified slightly:
 
 ```python
-# pages/index.pyx
+# pages/index.pyxl
 from datetime import datetime, timezone
 
 @server
@@ -77,7 +77,7 @@ type `pyxle dev`, this is what happens:
    Source: `cli/__init__.py`. Details: [The CLI](cli.md).
 
 2. **Build the initial page set.** The compiler walks `pages/`, parses
-   every `.pyx` file, and writes three artifacts per file into
+   every `.pyxl` file, and writes three artifacts per file into
    `.pyxle-build/`:
    - `.pyxle-build/server/pages/index.py` — the Python loader, executable
    - `.pyxle-build/client/pages/index.jsx` — the React component, bundleable
@@ -134,7 +134,7 @@ Starlette's router receives this and dispatches to the handler that
 `build_page_router()` registered for the `/` route — that handler is a
 closure created by `_make_page_handler()` (`devserver/starlette_app.py:330`).
 
-The handler resolves which `.pyx` file owns this route by looking it up in
+The handler resolves which `.pyxl` file owns this route by looking it up in
 the **page registry** (`devserver/registry.py`). The registry was built
 during the initial compile — it maps each route path to a `PageRoute`
 dataclass containing every path the SSR pipeline needs:
@@ -142,8 +142,8 @@ dataclass containing every path the SSR pipeline needs:
 ```python
 PageRoute(
     path="/",
-    source_relative_path=Path("index.pyx"),
-    source_absolute_path=…/pages/index.pyx,
+    source_relative_path=Path("index.pyxl"),
+    source_absolute_path=…/pages/index.pyxl,
     server_module_path=…/.pyxle-build/server/pages/index.py,
     client_module_path=…/.pyxle-build/client/pages/index.jsx,
     metadata_path=…/.pyxle-build/metadata/pages/index.json,
@@ -166,7 +166,7 @@ point. Everything that follows lives inside it.
 Pyxle imports the compiled server module
 (`.pyxle-build/server/pages/index.py`). In dev mode, before importing, it
 purges any cached version from `sys.modules` so changes you've made to
-the `.pyx` file are reflected immediately. (In production, modules are
+the `.pyxl` file are reflected immediately. (In production, modules are
 imported once at startup.)
 
 Once imported, Pyxle finds the function tagged `__pyxle_loader__ = True`
@@ -191,7 +191,7 @@ A few invariants matter here:
 
 If the loader raises `LoaderError("Not found", status_code=404)`, Pyxle
 walks up the directory tree from the current page looking for the
-nearest `error.pyx` file. If one exists, it renders that boundary with
+nearest `error.pyxl` file. If one exists, it renders that boundary with
 the error context. If not, it falls back to the default error document.
 Details: [SSR § Error handling](ssr.md#error-handling).
 
@@ -202,7 +202,7 @@ Details: [SSR § Error handling](ssr.md#error-handling).
 While the loader's data is the **body** of the page, the **`<head>`** is
 assembled from up to four sources, in order of increasing priority:
 
-1. **Layout `<Head>` blocks.** If `pages/layout.pyx` (or any ancestor
+1. **Layout `<Head>` blocks.** If `pages/layout.pyxl` (or any ancestor
    layout) has a `<Head>` JSX block, its contents go in first.
 2. **The page's `HEAD` Python variable.** Static or callable. If it's a
    callable, Pyxle invokes it with the loader data: `HEAD(data)`.
@@ -225,7 +225,7 @@ Each element is also **sanitized**: event handler attributes
 (`onclick`, `onerror`) are stripped, `<` and `>` inside `<title>` are
 escaped, and `javascript:` / `vbscript:` URLs are neutralized.
 
-For our `index.pyx`, the merged head ends up as:
+For our `index.pyxl`, the merged head ends up as:
 
 ```html
 <title>Pyxle App</title>
@@ -428,13 +428,13 @@ look at one of these stages.
 
 Where to go next:
 
-- Curious about **how Python and JSX get separated in a `.pyx` file**?
-  → [The .pyx file format](pyx-files.md), then [The parser](parser.md).
+- Curious about **how Python and JSX get separated in a `.pyxl` file**?
+  → [The .pyxl file format](pyxl-files.md), then [The parser](parser.md).
 
 - Want to know **what the compiled `.py` and `.jsx` artifacts look like**?
   → [The compiler](compiler.md).
 
-- Wondering **how dynamic routes like `[id].pyx` work**?
+- Wondering **how dynamic routes like `[id].pyxl` work**?
   → [Routing](routing.md).
 
 - Curious about **the SSR worker pool, head merging, and streaming**?

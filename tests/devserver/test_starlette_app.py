@@ -44,7 +44,7 @@ def project(tmp_path: Path) -> DevServerSettings:
     )
 
     write_file(
-        settings.pages_dir / "index.pyx",
+        settings.pages_dir / "index.pyxl",
         """
 
 @server
@@ -62,7 +62,7 @@ export default function Home({ data }) {
     )
 
     write_file(
-        settings.pages_dir / "posts/[id].pyx",
+        settings.pages_dir / "posts/[id].pyxl",
         """import React from 'react';
 
 export default function Post({ data }) {
@@ -275,7 +275,7 @@ def test_create_starlette_app_combines_routes(project: DevServerSettings, monkey
 
 def test_static_assets_middleware_handles_catchall_routes(project: DevServerSettings, monkeypatch, tmp_path: Path) -> None:
     write_file(
-        project.pages_dir / "[...slug].pyx",
+        project.pages_dir / "[...slug].pyxl",
         """
 import React from 'react';
 

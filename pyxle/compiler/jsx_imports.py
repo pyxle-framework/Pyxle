@@ -1,4 +1,4 @@
-"""Utilities for rewriting JSX/TS import specifiers that point at `.pyx` sources."""
+"""Utilities for rewriting JSX/TS import specifiers that point at `.pyxl` sources."""
 
 from __future__ import annotations
 
@@ -349,9 +349,9 @@ def _rewrite_specifier_value(value: str) -> str | None:
             break
     prefix = value[:split_index]
     suffix = value[split_index:]
-    if not prefix.endswith(".pyx"):
+    if not prefix.endswith(".pyxl"):
         return None
-    return f"{prefix[:-4]}.jsx{suffix}"
+    return f"{prefix[:-5]}.jsx{suffix}"
 
 
 def _is_identifier_start(char: str) -> bool:
@@ -362,11 +362,11 @@ def _is_identifier_part(char: str) -> bool:
     return char == "_" or char == "$" or char.isalpha() or char.isdigit()
 
 
-def rewrite_pyx_import_specifiers(source: str) -> tuple[str, int]:
-    """Rewrite `.pyx` specifiers inside import/export declarations."""
+def rewrite_pyxl_import_specifiers(source: str) -> tuple[str, int]:
+    """Rewrite `.pyxl` specifiers inside import/export declarations."""
 
     rewriter = _ModuleSpecifierRewriter(source)
     return rewriter.apply()
 
 
-__all__ = ["rewrite_pyx_import_specifiers"]
+__all__ = ["rewrite_pyxl_import_specifiers"]

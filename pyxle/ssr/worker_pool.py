@@ -24,6 +24,32 @@ logger = logging.getLogger(__name__)
 
 _WORKER_STOP_TIMEOUT = 5.0  # seconds to wait for graceful shutdown
 
+# Environment variables safe to forward to Node.js worker processes.
+# NODE_OPTIONS is explicitly excluded to prevent arbitrary code injection.
+_ALLOWED_ENV_KEYS: frozenset[str] = frozenset({
+    "PATH", "HOME", "LANG", "TERM", "USER", "SHELL", "TMPDIR",
+    "SYSTEMROOT", "APPDATA",  # Windows support
+})
+
+
+def _build_node_env(project_root: Path) -> dict[str, str]:
+    """Build a minimal environment dict for Node.js worker processes.
+
+    Only forwards a safe subset of environment variables to prevent
+    ``NODE_OPTIONS``-based code injection and accidental secret leakage.
+    """
+    env: dict[str, str] = {}
+    for key, value in os.environ.items():
+        if key in _ALLOWED_ENV_KEYS or key.startswith("PYXLE_PUBLIC_"):
+            env[key] = value
+    # Set NODE_PATH so the worker can resolve project-local packages.
+    node_path = str(project_root / "node_modules")
+    existing = env.get("NODE_PATH", "")
+    env["NODE_PATH"] = (
+        node_path if not existing else os.pathsep.join([node_path, existing])
+    )
+    return env
+
 
 class WorkerPoolError(RuntimeError):
     """Raised when the worker pool cannot process a render request."""
@@ -155,11 +181,13 @@ class SsrWorkerPool:
         project_root: Path,
         client_root: Path,
         node_executable: str | None = None,
+        render_timeout: float = 30.0,
     ) -> None:
         self._size = max(1, size)
         self._project_root = project_root
         self._client_root = client_root
         self._node_executable = node_executable
+        self._render_timeout = render_timeout
         self._workers: list[_WorkerState] = []
         self._rr_index = 0
         self._started = False
@@ -241,7 +269,16 @@ class SsrWorkerPool:
         }
 
         try:
-            result = await worker.send(payload)
+            result = await asyncio.wait_for(
+                worker.send(payload), timeout=self._render_timeout
+            )
+        except asyncio.TimeoutError:
+            self._workers = [w for w in self._workers if w is not worker]
+            asyncio.get_running_loop().create_task(self._replenish())
+            raise WorkerPoolError(
+                f"SSR render timed out after {self._render_timeout}s "
+                f"for {component_path.name}"
+            )
         except WorkerPoolError:
             self._workers = [w for w in self._workers if w is not worker]
             asyncio.get_running_loop().create_task(self._replenish())
@@ -308,12 +345,7 @@ class SsrWorkerPool:
                 f"SSR worker script not found at '{script}'. Reinstall Pyxle."
             )
 
-        env = os.environ.copy()
-        node_path = str(self._project_root / "node_modules")
-        existing = env.get("NODE_PATH", "")
-        env["NODE_PATH"] = (
-            node_path if not existing else os.pathsep.join([node_path, existing])
-        )
+        env = _build_node_env(self._project_root)
 
         process = await asyncio.create_subprocess_exec(
             node_exec,

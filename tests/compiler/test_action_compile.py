@@ -21,7 +21,7 @@ def _make_writer(tmp_path: Path) -> ArtifactWriter:
 
 def test_writer_action_only_page(tmp_path: Path) -> None:
     """Page with @action (no @server loader) gets ensure_action_import."""
-    source = tmp_path / "pages" / "form.pyx"
+    source = tmp_path / "pages" / "form.pyxl"
     source.parent.mkdir(parents=True)
     source.write_text(
         dedent(
@@ -43,7 +43,7 @@ def test_writer_action_only_page(tmp_path: Path) -> None:
     parse_result = PyxParser().parse(source)
     result = writer.write(
         source_path=source,
-        page_relative_path=Path("form.pyx"),
+        page_relative_path=Path("form.pyxl"),
         route_path="/form",
         alternate_route_paths=None,
         parse_result=parse_result,
@@ -59,7 +59,7 @@ def test_writer_action_only_page(tmp_path: Path) -> None:
 
 def test_writer_loader_and_action_page(tmp_path: Path) -> None:
     """Page with both @server and @action gets the combined import."""
-    source = tmp_path / "pages" / "settings.pyx"
+    source = tmp_path / "pages" / "settings.pyxl"
     source.parent.mkdir(parents=True)
     source.write_text(
         dedent(
@@ -83,7 +83,7 @@ def test_writer_loader_and_action_page(tmp_path: Path) -> None:
     parse_result = PyxParser().parse(source)
     result = writer.write(
         source_path=source,
-        page_relative_path=Path("settings.pyx"),
+        page_relative_path=Path("settings.pyxl"),
         route_path="/settings",
         alternate_route_paths=None,
         parse_result=parse_result,
@@ -104,7 +104,7 @@ def test_writer_to_bool_handles_string_attributes(tmp_path: Path) -> None:
     to true booleans. Babel's JSX extractor returns boolean attrs as
     booleans most of the time, but when an explicit ``"true"``/``"false"``
     string is used, ``to_bool`` must accept it."""
-    source = tmp_path / "pages" / "stringly.pyx"
+    source = tmp_path / "pages" / "stringly.pyxl"
     source.parent.mkdir(parents=True)
     source.write_text(
         "import React from 'react';\n"
@@ -147,7 +147,7 @@ def test_writer_to_bool_handles_string_attributes(tmp_path: Path) -> None:
     writer = _make_writer(tmp_path)
     result = writer.write(
         source_path=source,
-        page_relative_path=Path("stringly.pyx"),
+        page_relative_path=Path("stringly.pyxl"),
         route_path="/stringly",
         alternate_route_paths=None,
         parse_result=parse_result,
@@ -161,7 +161,7 @@ def test_writer_to_bool_handles_string_attributes(tmp_path: Path) -> None:
 
 
 def test_writer_multiple_actions_in_metadata_json(tmp_path: Path) -> None:
-    source = tmp_path / "pages" / "multi.pyx"
+    source = tmp_path / "pages" / "multi.pyxl"
     source.parent.mkdir(parents=True)
     source.write_text(
         dedent(
@@ -189,7 +189,7 @@ def test_writer_multiple_actions_in_metadata_json(tmp_path: Path) -> None:
     parse_result = PyxParser().parse(source)
     result = writer.write(
         source_path=source,
-        page_relative_path=Path("multi.pyx"),
+        page_relative_path=Path("multi.pyxl"),
         route_path="/multi",
         alternate_route_paths=None,
         parse_result=parse_result,

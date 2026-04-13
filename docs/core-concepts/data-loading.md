@@ -80,7 +80,7 @@ async def load_page(request):
 
 When `LoaderError` is raised:
 
-1. Pyxle searches up the directory tree for the nearest `error.pyx`
+1. Pyxle searches up the directory tree for the nearest `error.pyxl`
 2. If found, it renders the error boundary with the error context as props
 3. If not found, a default error page is shown
 

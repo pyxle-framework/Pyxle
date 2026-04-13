@@ -141,24 +141,26 @@ def _extract_dedupe_key(html: str) -> str | None:
     if tag_name == "title":
         return "title"
 
-    # Meta tag
+    # Meta tag — attribute values are lowercased for case-insensitive
+    # dedup so that ``<meta name="Robots">`` and ``<meta name="robots">``
+    # collapse to the same key.
     if tag_name == "meta":
         # Meta tag with name
         if "name" in attrs:
-            return f"meta:name:{attrs['name']}"
+            return f"meta:name:{attrs['name'].lower()}"
         # Meta tag with property
         if "property" in attrs:
-            return f"meta:property:{attrs['property']}"
+            return f"meta:property:{attrs['property'].lower()}"
         # Meta tag with charset (dedupe by type)
         if "charset" in attrs:
             return "meta:charset"
 
     # Link tag
     if tag_name == "link":
-        rel = attrs.get("rel", "")
+        rel = attrs.get("rel", "").lower()
         href = attrs.get("href", "")
         # For canonical, dedupe by rel only (only one canonical)
-        if rel.lower() == "canonical":
+        if rel == "canonical":
             return "link:canonical"
         # For others, dedupe by rel + href
         if rel:
@@ -178,16 +180,24 @@ def _extract_dedupe_key(html: str) -> str | None:
 # ---------------------------------------------------------------------------
 
 # Matches event-handler attributes: onclick="...", onerror='...', onload=val
+# The leading character class ``[\s/]`` covers both whitespace and the ``/``
+# that HTML5 permits as an attribute-name separator (e.g. ``<img/onclick=…>``).
 _EVENT_HANDLER_ATTR_RE = re.compile(
-    r"""\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|\S+)""",
+    r"""[\s/]+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|\S+)""",
     re.IGNORECASE,
 )
 
-# Matches javascript:/vbscript: protocols in href/src/action attributes
+# Matches javascript:/vbscript:/data: protocols in href/src/action attributes.
+# ``data:`` URIs can carry full HTML documents and are a potent XSS vector
+# when injected into ``<iframe src>`` or ``<link>`` elements.
 _DANGEROUS_URL_ATTR_RE = re.compile(
-    r"""((?:href|src|action)\s*=\s*['"]?)\s*(javascript|vbscript)\s*:""",
+    r"""((?:href|src|action)\s*=\s*['"]?)\s*(javascript|vbscript|data)\s*:""",
     re.IGNORECASE,
 )
+
+# Detects ``<base`` at the start of the element — ``<base href>`` lets an
+# attacker re-root every relative URL on the page.
+_BASE_TAG_RE = re.compile(r"^<base\b", re.IGNORECASE)
 
 # Opening and closing <title> tag patterns
 _TITLE_OPEN_RE = re.compile(r"<title[^>]*>", re.IGNORECASE)
@@ -197,26 +207,41 @@ _TITLE_CLOSE_RE = re.compile(r"</title\s*>", re.IGNORECASE)
 def sanitize_head_element(html: str) -> str:
     """Sanitize a single HEAD element to prevent XSS injection.
 
-    Applies three layers of protection:
+    Applies four layers of protection:
 
+    0. **Base-tag rejection** — ``<base>`` elements are stripped entirely
+       because they re-route every relative asset on the page.
     1. **Title text escaping** — escapes ``<`` and ``>`` inside
        ``<title>…</title>`` so that injected closing tags and script tags
        become inert text.
     2. **Event-handler stripping** — removes ``on*`` attributes
-       (``onclick``, ``onerror``, ``onload``, …).
-    3. **Dangerous URL neutralisation** — replaces ``javascript:`` and
-       ``vbscript:`` protocol URLs in ``href`` / ``src`` / ``action``
-       attributes with an empty string.
+       (``onclick``, ``onerror``, ``onload``, …).  Also detects
+       entity-encoded event handlers.
+    3. **Dangerous URL neutralisation** — replaces ``javascript:``,
+       ``vbscript:``, and ``data:`` protocol URLs in ``href`` / ``src``
+       / ``action`` attributes with an empty string.
     """
     html = html.strip()
     if not html:
         return html
 
+    # Layer 0: reject <base> elements entirely.
+    if _BASE_TAG_RE.match(html):
+        return ""
+
     # Layer 1: escape angle brackets inside <title> text content
     html = _escape_title_text_content(html)
 
-    # Layer 2: strip event-handler attributes
+    # Layer 2: strip event-handler attributes.
+    # First pass: strip handlers visible in the raw markup.
     html = _EVENT_HANDLER_ATTR_RE.sub("", html)
+    # Second pass: entity-decode and re-check so that ``&#111;nclick``
+    # style bypasses are caught.
+    from html import unescape as html_unescape
+
+    decoded = html_unescape(html)
+    if _EVENT_HANDLER_ATTR_RE.search(decoded):
+        html = _EVENT_HANDLER_ATTR_RE.sub("", decoded)
 
     # Layer 3: neutralise dangerous protocol URLs
     html = _DANGEROUS_URL_ATTR_RE.sub(r"\1", html)
@@ -260,8 +285,8 @@ def merge_head_elements(
 
     Precedence order (higher priority overrides lower):
 
-    1. Layout JSX blocks — static extraction from ancestor ``layout.pyx``
-       and ``template.pyx`` files.
+    1. Layout JSX blocks — static extraction from ancestor ``layout.pyxl``
+       and ``template.pyxl`` files.
     2. Page ``HEAD`` variable — server-side declaration in the page module.
     3. Page JSX blocks — static extraction of ``<Head>`` blocks in the
        page file at compile time.

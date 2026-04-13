@@ -3,12 +3,21 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Callable
 
 import typer
+
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]")
+
+
+def _strip_ansi(text: str) -> str:
+    """Remove ANSI escape sequences from *text*."""
+    return _ANSI_RE.sub("", text)
+
 
 _LogFunction = Callable[[str], None]
 
@@ -70,7 +79,7 @@ class ConsoleLogger:
     def _emit_json(self, level: str, message: str, extra: dict[str, object] | None = None) -> None:
         payload: dict[str, object] = {
             "level": level,
-            "message": message,
+            "message": _strip_ansi(message),
             "timestamp": self.timestamp_factory(),
         }
         if extra:

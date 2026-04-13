@@ -179,8 +179,10 @@ def build_document_shell(
 
 
 def _serialize_props(props: dict[str, Any]) -> str:
+    from pyxle.ssr._escape import escape_inline_json
+
     payload = json.dumps(props, ensure_ascii=False, separators=(",", ":"))
-    return payload.replace("</", "<\\/")
+    return escape_inline_json(payload)
 
 
 def render_head_markup(elements: tuple[str, ...]) -> str:
@@ -302,9 +304,12 @@ def render_error_document(
     if not settings.debug:
         return _render_production_error_document()
 
+    from pyxle.devserver._security import redact_sensitive_patterns
+
     vite_origin = _browser_vite_origin(settings)
     error_type = escape(error.__class__.__name__)
-    message = escape(str(error) or error.__class__.__name__)
+    raw_message = str(error) or error.__class__.__name__
+    message = escape(redact_sensitive_patterns(raw_message))
     page_path = escape(page.path)
 
     return f"""<!DOCTYPE html>
@@ -356,7 +361,7 @@ def _render_production_error_document() -> str:
 def _format_nonce_attr(value: str | None) -> str:
     if not value:
         return ""
-    return f' nonce="{value}"'
+    return f' nonce="{escape(value, quote=True)}"'
 
 
 def _render_global_styles_markup(settings: DevServerSettings) -> str:
@@ -372,7 +377,9 @@ def _render_global_styles_markup(settings: DevServerSettings) -> str:
 def _escape_style_contents(value: str) -> str:
   if not value:
     return ""
-  return value.replace("</", "<\\/")
+  from pyxle.ssr._escape import escape_inline_json
+
+  return escape_inline_json(value)
 
 
 def _render_inline_styles_markup(styles: tuple[InlineStyleFragment, ...]) -> str:
@@ -434,16 +441,18 @@ def _render_before_interactive_scripts(scripts: tuple[dict, ...], nonce_attr: st
 
 def _serialize_scripts_metadata(scripts: tuple[dict, ...]) -> str:
   """Serialize scripts metadata for client-side loading."""
+  from pyxle.ssr._escape import escape_inline_json
+
   if not scripts:
     return "[]"
-  
+
   # Filter out beforeInteractive scripts (already injected in head)
   client_scripts = [
     s for s in scripts
     if s.get("strategy", "afterInteractive") != "beforeInteractive"
   ]
-  
-  return json.dumps(client_scripts, ensure_ascii=False, separators=(",", ":"))
+
+  return escape_inline_json(json.dumps(client_scripts, ensure_ascii=False, separators=(",", ":")))
 
 __all__ = [
   "DocumentShell",

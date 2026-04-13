@@ -23,15 +23,15 @@ def test_compose_layout_templates_generates_wrapped_module(tmp_path: Path) -> No
     settings = create_project(tmp_path)
 
     write(
-        settings.pages_dir / "layout.pyx",
+        settings.pages_dir / "layout.pyxl",
         """import React from 'react';\nimport { Slot } from 'pyxle/client';\n\nexport default function SiteLayout({ children }) {\n    return (\n        <div className=\"site-layout\">\n            <Slot name=\"hero\" fallback={<p>fallback</p>} />\n            {children}\n        </div>\n    );\n}\n\nexport const slots = {\n    hero: () => <p>site hero</p>,\n};\n""",
     )
     write(
-        settings.pages_dir / "blog/template.pyx",
+        settings.pages_dir / "blog/template.pyxl",
         """import React from 'react';\n\nexport default function BlogTemplate({ children }) {\n    return <section className=\"blog-template\">{children}</section>;\n}\n\nexport const slots = {\n    hero: () => <p>blog hero</p>,\n};\n""",
     )
     write(
-        settings.pages_dir / "blog/post.pyx",
+        settings.pages_dir / "blog/post.pyxl",
         """import React from 'react';\n\nexport default function BlogPost() {\n    return <article>Post</article>;\n}\n\nexport const slots = {\n    hero: () => <h1>Post hero</h1>,\n};\n""",
     )
 
@@ -61,11 +61,11 @@ def test_compose_layout_templates_handles_pages_without_slots(tmp_path: Path) ->
     settings = create_project(tmp_path)
 
     write(
-        settings.pages_dir / "layout.pyx",
+        settings.pages_dir / "layout.pyxl",
         "import React from 'react';\nexport default function Layout({ children }) { return <div>{children}</div>; }\n",
     )
     write(
-        settings.pages_dir / "blog" / "post.pyx",
+        settings.pages_dir / "blog" / "post.pyxl",
         "import React from 'react';\n\nexport default function BlogPost() {\n    return <article>Post</article>;\n}\n",
     )
 
@@ -84,9 +84,9 @@ def test_compose_layout_templates_handles_pages_without_slots(tmp_path: Path) ->
 def test_compose_layout_templates_removes_wrappers_when_no_files(tmp_path: Path) -> None:
     settings = create_project(tmp_path)
 
-    write(settings.pages_dir / "layout.pyx", "import React from 'react';\nexport default function Layout({ children }) { return <div>{children}</div>; }")
-    write(settings.pages_dir / "nested/template.pyx", "import React from 'react';\nexport default function Template({ children }) { return <>{children}</>; }")
-    write(settings.pages_dir / "nested/page.pyx", "import React from 'react';\nexport default function Page() { return <p>nested</p>; }")
+    write(settings.pages_dir / "layout.pyxl", "import React from 'react';\nexport default function Layout({ children }) { return <div>{children}</div>; }")
+    write(settings.pages_dir / "nested/template.pyxl", "import React from 'react';\nexport default function Template({ children }) { return <>{children}</>; }")
+    write(settings.pages_dir / "nested/page.pyxl", "import React from 'react';\nexport default function Page() { return <p>nested</p>; }")
 
     build_once(settings, force_rebuild=True)
 
@@ -97,8 +97,8 @@ def test_compose_layout_templates_removes_wrappers_when_no_files(tmp_path: Path)
     assert json.loads(metadata_path.read_text(encoding="utf-8"))["client_path"] == "/routes/nested/page.jsx"
 
     # Remove wrapper files and rebuild to ensure metadata resets.
-    (settings.pages_dir / "layout.pyx").unlink()
-    (settings.pages_dir / "nested/template.pyx").unlink()
+    (settings.pages_dir / "layout.pyxl").unlink()
+    (settings.pages_dir / "nested/template.pyxl").unlink()
 
     build_once(settings, force_rebuild=True)
 

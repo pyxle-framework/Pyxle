@@ -1,6 +1,6 @@
 # API Routes
 
-Files under `pages/api/` are API endpoints. They are plain Python files (not `.pyx`) that handle HTTP requests and return JSON or other responses.
+Files under `pages/api/` are API endpoints. They are plain Python files (not `.pyxl`) that handle HTTP requests and return JSON or other responses.
 
 ## Basic API route
 
@@ -123,7 +123,7 @@ async def get(request: Request) -> JSONResponse:
 
 | Feature | API routes | Server actions |
 |---------|-----------|----------------|
-| File location | `pages/api/*.py` | Inside `.pyx` files |
+| File location | `pages/api/*.py` | Inside `.pyxl` files |
 | HTTP methods | Any (GET, POST, PUT, etc.) | POST only |
 | Response format | Any Starlette Response | JSON dict |
 | Called from | Anywhere (curl, fetch, etc.) | `<Form>` or `useAction` |

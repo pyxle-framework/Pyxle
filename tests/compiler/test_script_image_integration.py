@@ -26,7 +26,7 @@ class TestScriptImageIntegration:
 
     def test_compile_page_with_scripts_and_images(self, temp_project: Path) -> None:
         """Verify scripts and images are compiled and stored in metadata."""
-        source_file = temp_project / "pages" / "index.pyx"
+        source_file = temp_project / "pages" / "index.pyxl"
         source_file.write_text(
             """
 from pyxle import server
@@ -78,7 +78,7 @@ export default function Page({ data }) {
 
     def test_compile_page_with_multiple_scripts(self, temp_project: Path) -> None:
         """Verify multiple scripts are tracked independently."""
-        source_file = temp_project / "pages" / "dashboard.pyx"
+        source_file = temp_project / "pages" / "dashboard.pyxl"
         source_file.write_text(
             """
 # --- JavaScript/PSX ---
@@ -110,7 +110,7 @@ export default function Dashboard() {
 
     def test_compile_page_with_images_preserves_priority(self, temp_project: Path) -> None:
         """Verify image priority attribute is captured."""
-        source_file = temp_project / "pages" / "gallery.pyx"
+        source_file = temp_project / "pages" / "gallery.pyxl"
         source_file.write_text(
             """
 # --- JavaScript/PSX ---
@@ -140,7 +140,7 @@ export default function Gallery() {
 
     def test_compile_preserves_existing_head(self, temp_project: Path) -> None:
         """Verify HEAD variable and scripts/images coexist."""
-        source_file = temp_project / "pages" / "about.pyx"
+        source_file = temp_project / "pages" / "about.pyxl"
         source_file.write_text(
             """
 HEAD = "<title>About</title>"

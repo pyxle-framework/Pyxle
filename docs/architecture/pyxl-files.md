@@ -1,4 +1,4 @@
-# The `.pyx` file format
+# The `.pyxl` file format
 
 A Pyxle page is a single file with two languages in it: Python and JSX.
 This doc explains *why* that file exists, *what's actually in it*, and
@@ -29,21 +29,21 @@ delete one file.
 
 This isn't a unique idea — Vue's `.vue` files, Svelte's `.svelte` files,
 Astro's `.astro` files, MDX's `.mdx` files all do something similar. What's
-different about `.pyx` is that the two languages inside are the *full*
+different about `.pyxl` is that the two languages inside are the *full*
 ones: real Python (with `import`, `class`, `async def`, decorators,
 asyncio, the works) and real JSX (with `import React`, hooks, ES module
 syntax, the works). Neither is a stripped-down DSL.
 
 ---
 
-## What a `.pyx` file looks like
+## What a `.pyxl` file looks like
 
 Let's start with the simplest one and grow it.
 
 ### A pure-JSX page
 
 ```python
-# pages/about.pyx
+# pages/about.pyxl
 import React from 'react';
 
 export default function About() {
@@ -67,7 +67,7 @@ empty, the route is registered but has no `@server` function.
 ### A page with a server loader
 
 ```python
-# pages/status.pyx
+# pages/status.pyxl
 import time
 
 @server
@@ -106,7 +106,7 @@ A few things to notice in this example:
 Here's a more interesting pattern: alternating Python and JSX blocks.
 
 ```python
-# pages/dashboard.pyx
+# pages/dashboard.pyxl
 from datetime import datetime
 
 # A Python helper used by the loader.
@@ -172,7 +172,7 @@ Use the `<Head>` component from `pyxle/client` to control what ends up in
 the document head. It's the recommended approach for nearly every page:
 
 ```python
-# pages/blog/[slug].pyx
+# pages/blog/[slug].pyxl
 @server
 async def load_post(request):
     slug = request.path_params["slug"]
@@ -220,20 +220,20 @@ write, easier to type-check, and composes naturally with layouts.
 
 ---
 
-## What's *not* in a `.pyx` file
+## What's *not* in a `.pyxl` file
 
-A `.pyx` file is **always** one route — one page. It is not:
+A `.pyxl` file is **always** one route — one page. It is not:
 
 - **A library file.** If you have shared Python utilities, put them in a
-  regular `.py` file and `import` them from your `.pyx`. The parser does
+  regular `.py` file and `import` them from your `.pyxl`. The parser does
   not look inside `.py` files.
 - **A reusable component file.** If you have shared JSX components, put
-  them in a regular `.jsx` file and `import` them from your `.pyx`. The
+  them in a regular `.jsx` file and `import` them from your `.pyxl`. The
   bundler resolves these like any normal module import.
 - **An API handler.** Plain JSON APIs go in `pages/api/*.py` files
   (regular Python, no JSX). See [Routing § API routes](routing.md#api-routes).
-- **A layout or template.** Layouts use the same `.pyx` extension but
-  live in `layout.pyx` files at strategic points in the directory tree.
+- **A layout or template.** Layouts use the same `.pyxl` extension but
+  live in `layout.pyxl` files at strategic points in the directory tree.
   They wrap pages instead of being pages themselves. See
   [Routing § Layouts](routing.md#layouts).
 
@@ -241,7 +241,7 @@ A `.pyx` file is **always** one route — one page. It is not:
 
 ## What the framework "sees"
 
-When the compiler processes your `.pyx` file, it produces a single
+When the compiler processes your `.pyxl` file, it produces a single
 `PyxParseResult` object that captures everything the rest of the
 framework needs. The shape is:
 
@@ -274,7 +274,7 @@ A few things worth understanding here:
 2. **`python_line_numbers` and `jsx_line_numbers` are line maps.**
    When the compiler finds an error in the joined Python output (say,
    line 7 of `python_code`), it can look up `python_line_numbers[6]`
-   to find the original line number in the source `.pyx` file. This is
+   to find the original line number in the source `.pyxl` file. This is
    how Pyxle's error messages always point at the right line.
 
 3. **`loader`, `actions`, `head_elements`, `head_jsx_blocks`,
@@ -294,16 +294,16 @@ A few things worth understanding here:
 
 ## File extension and tooling
 
-Pyxle uses `.pyx` because:
+Pyxle uses `.pyxl` because:
 
 - It signals "this isn't a normal Python file" to anyone glancing at
   the directory.
 - Most editors don't have Pyxle support yet (LSP support is on the
-  roadmap), so the convention is: **set your editor to treat `.pyx` as
+  roadmap), so the convention is: **set your editor to treat `.pyxl` as
   Python for syntax highlighting**. The Python half lights up
   correctly; the JSX half ends up looking like a string of nonsense,
   which is honest about the situation.
-- The Cython project uses `.pyx` for a different purpose. We know.
+- The Cython project uses `.pyxl` for a different purpose. We know.
   Pyxle is for web pages, Cython is for compiled Python extensions —
   in practice they don't overlap, and the Pyxle parser has nothing to
   do with the Cython parser.
@@ -320,7 +320,7 @@ both halves, and inline diagnostics. Until then, the convention is
 | You know... | And you're wondering... | Answer |
 |---|---|---|
 | Next.js | Where's `getServerSideProps`? | It's the `@server` decorator on a function called whatever you want. |
-| Next.js | Where's `app/page.tsx` and `route.ts`? | One file: the loader and the component live together in `pages/foo.pyx`. |
+| Next.js | Where's `app/page.tsx` and `route.ts`? | One file: the loader and the component live together in `pages/foo.pyxl`. |
 | Remix | Where's `loader` and `action`? | `@server` for loaders, `@action` for actions. Same idea, different name. |
 | Django | Where's `views.py`? | The loader function is the view. The template is the JSX in the same file. |
 | FastAPI | Where's the route decorator? | Pyxle uses **file-based routing** — no `@app.get("/")`. The file path *is* the route. |
@@ -336,7 +336,7 @@ halves in their original languages.
 
 ## Where to read next
 
-You now know what a `.pyx` file is, what's in it, and what the parser
+You now know what a `.pyxl` file is, what's in it, and what the parser
 produces from it. The next question is: **how does the parser actually
 split Python from JSX without any markers?**
 

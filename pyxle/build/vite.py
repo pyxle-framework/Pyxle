@@ -52,6 +52,7 @@ def run_vite_build(
         text=True,
         check=False,
         env=env,
+        start_new_session=True,
     )
 
     _log_process_output(process.stdout, process.stderr, logger)
@@ -167,6 +168,7 @@ def _attempt_npm_install(project_root: Path, logger: ConsoleLogger) -> bool:
         capture_output=True,
         text=True,
         check=False,
+        start_new_session=True,
     )
 
     _log_process_output(process.stdout, process.stderr, logger, prefix="npm")

@@ -30,8 +30,8 @@ def test_init_scaffolds_project_structure() -> None:
 
         project_dir = Path("my-app")
         assert project_dir.is_dir()
-        assert (project_dir / "pages" / "layout.pyx").exists()
-        assert (project_dir / "pages" / "index.pyx").exists()
+        assert (project_dir / "pages" / "layout.pyxl").exists()
+        assert (project_dir / "pages" / "index.pyxl").exists()
         assert (project_dir / "pages" / "api" / "pulse.py").exists()
         assert (project_dir / "pages" / "styles" / "tailwind.css").exists()
         assert (project_dir / "tailwind.config.cjs").exists()
@@ -808,7 +808,7 @@ def test_compile_hidden_command_invokes_compiler() -> None:
     with runner.isolated_filesystem():
         source_dir = Path("pages/posts")
         source_dir.mkdir(parents=True)
-        source_file = source_dir / "[id].pyx"
+        source_file = source_dir / "[id].pyxl"
         source_file.write_text(
             dedent(
                 """
@@ -889,7 +889,7 @@ def test_resolve_run_build_imports_when_placeholder(monkeypatch):
 
 def test_compile_command_errors_when_source_missing() -> None:
     with runner.isolated_filesystem():
-        result = runner.invoke(app, ["compile", "pages/missing.pyx"], catch_exceptions=False)
+        result = runner.invoke(app, ["compile", "pages/missing.pyxl"], catch_exceptions=False)
         assert result.exit_code == 1
         assert "was not found" in result.stdout
 
@@ -898,7 +898,7 @@ def test_compile_command_surfaces_compiler_failure() -> None:
     with runner.isolated_filesystem():
         source_dir = Path("pages")
         source_dir.mkdir()
-        source_file = source_dir / "bad.pyx"
+        source_file = source_dir / "bad.pyxl"
         source_file.write_text(
             dedent(
                 """
@@ -1096,7 +1096,7 @@ def test_check_command_succeeds_on_valid_project() -> None:
         project = Path("demo")
         (project / "pages").mkdir(parents=True)
         (project / "public").mkdir()
-        (project / "pages" / "index.pyx").write_text(
+        (project / "pages" / "index.pyxl").write_text(
             "import React from 'react';\n\n"
             "export default function Page() {\n"
             "    return <div>Hello</div>;\n"
@@ -1107,7 +1107,7 @@ def test_check_command_succeeds_on_valid_project() -> None:
         result = runner.invoke(app, ["check", "demo"], catch_exceptions=False)
 
         assert result.exit_code == 0
-        assert "1 .pyx" in result.stdout
+        assert "1 .pyxl" in result.stdout
         assert "passed" in result.stdout
 
 
@@ -1116,7 +1116,7 @@ def test_check_command_reports_compilation_error() -> None:
         project = Path("demo")
         (project / "pages").mkdir(parents=True)
         (project / "public").mkdir()
-        (project / "pages" / "broken.pyx").write_text(
+        (project / "pages" / "broken.pyxl").write_text(
             "@server\n"
             "def bad_loader(request):\n"
             "    return {}\n",
@@ -1167,7 +1167,7 @@ def test_check_command_reports_multiple_diagnostics_per_file() -> None:
         # This file has TWO distinct semantic errors:
         #   1. @server function is not async
         #   2. @action function is not async
-        (project / "pages" / "broken.pyx").write_text(
+        (project / "pages" / "broken.pyxl").write_text(
             "@server\n"
             "def bad_loader(request):\n"
             "    return {}\n"
@@ -1200,7 +1200,7 @@ def test_check_command_reports_diagnostic_section_and_line() -> None:
         project = Path("demo")
         (project / "pages").mkdir(parents=True)
         (project / "public").mkdir()
-        (project / "pages" / "broken.pyx").write_text(
+        (project / "pages" / "broken.pyxl").write_text(
             "@server\n"
             "def bad_loader(request):\n"
             "    return {}\n"
@@ -1230,7 +1230,7 @@ def test_check_command_reports_jsx_syntax_errors() -> None:
         (project / "public").mkdir()
         # Invalid JSX: const declaration inside a JSX expression is
         # a parse error. Babel rejects this immediately.
-        (project / "pages" / "bad-jsx.pyx").write_text(
+        (project / "pages" / "bad-jsx.pyxl").write_text(
             "import React from 'react';\n"
             "\n"
             "export default function Page() {\n"
@@ -1260,7 +1260,7 @@ def test_check_command_survives_per_file_parser_crash(monkeypatch) -> None:
     from pyxle.compiler import parser as parser_module
 
     real_parse = parser_module.PyxParser.parse
-    crash_target = "crashy.pyx"
+    crash_target = "crashy.pyxl"
 
     def fake_parse(self, source_path, *, tolerant=False, validate_jsx=False):
         if source_path.name == crash_target:
@@ -1285,7 +1285,7 @@ def test_check_command_survives_per_file_parser_crash(monkeypatch) -> None:
             "export default function P() { return <div />; }\n",
             encoding="utf-8",
         )
-        (project / "pages" / "ok.pyx").write_text(
+        (project / "pages" / "ok.pyxl").write_text(
             "import React from 'react';\n"
             "export default function Q() { return <div />; }\n",
             encoding="utf-8",
@@ -1298,7 +1298,7 @@ def test_check_command_survives_per_file_parser_crash(monkeypatch) -> None:
         assert "RuntimeError" in result.stdout
         # The CLI says it checked BOTH files (crash didn't abort
         # iteration).
-        assert "Checked 2 .pyx file(s)" in result.stdout
+        assert "Checked 2 .pyxl file(s)" in result.stdout
 
 
 def test_check_command_warns_missing_package_json() -> None:
@@ -1308,7 +1308,7 @@ def test_check_command_warns_missing_package_json() -> None:
         (project / "pages").mkdir(parents=True)
         (project / "public").mkdir()
         (project / "node_modules").mkdir()
-        (project / "pages" / "index.pyx").write_text(
+        (project / "pages" / "index.pyxl").write_text(
             "import React from 'react';\n"
             "export default function P() { return <div />; }\n",
             encoding="utf-8",
@@ -1350,7 +1350,7 @@ def test_check_command_handles_diagnostic_without_line() -> None:
         project = Path("demo")
         (project / "pages").mkdir(parents=True)
         (project / "public").mkdir()
-        (project / "pages" / "page.pyx").write_text(
+        (project / "pages" / "page.pyxl").write_text(
             "import React from 'react';\n"
             "export default function P() { return <div />; }\n",
             encoding="utf-8",
@@ -1380,14 +1380,14 @@ def test_routes_command_shows_page_routes() -> None:
         project = Path("demo")
         (project / "pages").mkdir(parents=True)
         (project / "public").mkdir()
-        (project / "pages" / "index.pyx").write_text(
+        (project / "pages" / "index.pyxl").write_text(
             "import React from 'react';\n\n"
             "export default function Page() {\n"
             "    return <div>Hello</div>;\n"
             "}\n",
             encoding="utf-8",
         )
-        (project / "pages" / "about.pyx").write_text(
+        (project / "pages" / "about.pyxl").write_text(
             "import React from 'react';\n\n"
             "export default function About() {\n"
             "    return <div>About</div>;\n"
@@ -1406,7 +1406,7 @@ def test_routes_command_json_output() -> None:
         project = Path("demo")
         (project / "pages").mkdir(parents=True)
         (project / "public").mkdir()
-        (project / "pages" / "index.pyx").write_text(
+        (project / "pages" / "index.pyxl").write_text(
             "import React from 'react';\n\n"
             "export default function Page() {\n"
             "    return <div>Hello</div>;\n"
@@ -1429,7 +1429,7 @@ def test_routes_command_shows_loader_and_api() -> None:
         (project / "pages").mkdir(parents=True)
         (project / "pages" / "api").mkdir()
         (project / "public").mkdir()
-        (project / "pages" / "index.pyx").write_text(
+        (project / "pages" / "index.pyxl").write_text(
             "from pyxle.runtime import server\n\n"
             "@server\n"
             "async def loader(request):\n"
@@ -1456,7 +1456,7 @@ def test_routes_command_shows_loader_and_api() -> None:
         project = Path("demo2")
         (project / "pages").mkdir(parents=True)
         (project / "public").mkdir()
-        (project / "pages" / "index.pyx").write_text(
+        (project / "pages" / "index.pyxl").write_text(
             "from pyxle.runtime import server\n\n"
             "@server\n"
             "async def loader(request):\n"
@@ -1500,7 +1500,7 @@ def test_routes_command_with_actions_and_error_boundary() -> None:
         (project / "pages" / "api").mkdir()
         (project / "public").mkdir()
         # Page with action and dynamic head
-        (project / "pages" / "index.pyx").write_text(
+        (project / "pages" / "index.pyxl").write_text(
             "from pyxle.runtime import server, action\n\n"
             "HEAD = lambda data: f'<title>{data.get(\"title\", \"Home\")}</title>'\n\n"
             "@server\n"
@@ -1514,7 +1514,7 @@ def test_routes_command_with_actions_and_error_boundary() -> None:
             encoding="utf-8",
         )
         # Error boundary page
-        (project / "pages" / "error.pyx").write_text(
+        (project / "pages" / "error.pyxl").write_text(
             "import React from 'react';\n"
             "export default function ErrorPage() { return <div>Error</div>; }\n",
             encoding="utf-8",
@@ -1571,7 +1571,7 @@ def test_check_command_quiet_suppresses_info() -> None:
         project = Path("demo")
         (project / "pages").mkdir(parents=True)
         (project / "public").mkdir()
-        (project / "pages" / "index.pyx").write_text(
+        (project / "pages" / "index.pyxl").write_text(
             "import React from 'react';\n"
             "export default function Page() { return <div />; }\n",
             encoding="utf-8",
@@ -1580,7 +1580,7 @@ def test_check_command_quiet_suppresses_info() -> None:
         result = runner.invoke(app, ["--quiet", "check", "demo"], catch_exceptions=False)
 
         assert result.exit_code == 0
-        # In quiet mode, "Checked N .pyx" info line should be suppressed
+        # In quiet mode, "Checked N .pyxl" info line should be suppressed
         assert "Checked" not in result.stdout
 
 
@@ -1602,7 +1602,7 @@ def test_typecheck_command_fails_when_tsc_not_found(monkeypatch) -> None:
         project = Path("demo")
         (project / "pages").mkdir(parents=True)
         (project / "public").mkdir()
-        (project / "pages" / "index.pyx").write_text(
+        (project / "pages" / "index.pyxl").write_text(
             "import React from 'react';\n"
             "export default function Page() { return <div />; }\n",
             encoding="utf-8",
@@ -1620,7 +1620,7 @@ def test_typecheck_command_succeeds_on_clean_output(monkeypatch) -> None:
         project = Path("demo")
         (project / "pages").mkdir(parents=True)
         (project / "public").mkdir()
-        (project / "pages" / "index.pyx").write_text(
+        (project / "pages" / "index.pyxl").write_text(
             "import React from 'react';\n"
             "export default function Page() { return <div />; }\n",
             encoding="utf-8",
@@ -1646,7 +1646,7 @@ def test_typecheck_command_reports_errors(monkeypatch) -> None:
         project = Path("demo")
         (project / "pages").mkdir(parents=True)
         (project / "public").mkdir()
-        (project / "pages" / "index.pyx").write_text(
+        (project / "pages" / "index.pyxl").write_text(
             "import React from 'react';\n"
             "export default function Page() { return <div />; }\n",
             encoding="utf-8",
@@ -1684,7 +1684,7 @@ def test_typecheck_command_handles_subprocess_file_not_found(monkeypatch) -> Non
         project = Path("demo")
         (project / "pages").mkdir(parents=True)
         (project / "public").mkdir()
-        (project / "pages" / "index.pyx").write_text(
+        (project / "pages" / "index.pyxl").write_text(
             "import React from 'react';\n"
             "export default function Page() { return <div />; }\n",
             encoding="utf-8",
@@ -1707,7 +1707,7 @@ def test_typecheck_command_handles_timeout(monkeypatch) -> None:
         project = Path("demo")
         (project / "pages").mkdir(parents=True)
         (project / "public").mkdir()
-        (project / "pages" / "index.pyx").write_text(
+        (project / "pages" / "index.pyxl").write_text(
             "import React from 'react';\n"
             "export default function Page() { return <div />; }\n",
             encoding="utf-8",
@@ -1730,7 +1730,7 @@ def test_typecheck_command_shows_stderr_warnings(monkeypatch) -> None:
         project = Path("demo")
         (project / "pages").mkdir(parents=True)
         (project / "public").mkdir()
-        (project / "pages" / "index.pyx").write_text(
+        (project / "pages" / "index.pyxl").write_text(
             "import React from 'react';\n"
             "export default function Page() { return <div />; }\n",
             encoding="utf-8",

@@ -1,7 +1,7 @@
 /**
  * Framework-owned Head component for Pyxle.
  *
- * This component allows JSX-based head tag declarations inside .pyx files,
+ * This component allows JSX-based head tag declarations inside .pyxl files,
  * providing parity with Next.js <Head> while integrating with Pyxle's
  * compiler-driven head metadata system.
  *

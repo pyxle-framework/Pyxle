@@ -19,15 +19,30 @@ class StubLogger(ConsoleLogger):
         super().__init__(secho=lambda *_args, **_kwargs: None)
 
 
+class _StubHeaders:
+    """Minimal dict-like object mimicking Starlette's header access."""
+
+    def __init__(self, data: dict[str, str] | None = None) -> None:
+        self._data = {k.lower(): v for k, v in (data or {}).items()}
+
+    def get(self, key: str, default: str = "") -> str:
+        return self._data.get(key.lower(), default)
+
+
 class StubWebSocket:
-    def __init__(self) -> None:
+    def __init__(self, *, origin: str = "") -> None:
         self.accepted = False
         self.sent: list[str] = []
         self.receive_calls = 0
         self.disconnect_after: int | None = None
+        self.closed_code: int | None = None
+        self.headers = _StubHeaders({"origin": origin} if origin else {})
 
     async def accept(self) -> None:
         self.accepted = True
+
+    async def close(self, code: int = 1000) -> None:
+        self.closed_code = code
 
     async def send_text(self, data: str) -> None:
         self.sent.append(data)
@@ -71,12 +86,12 @@ async def test_overlay_manager_broadcasts_reload_event() -> None:
 
     await manager.register(socket)
 
-    await manager.notify_reload(changed_paths=["pages/index.pyx"])
+    await manager.notify_reload(changed_paths=["pages/index.pyxl"])
 
     assert socket.sent, "expected reload payload"
     message = json.loads(socket.sent[0])
     assert message["type"] == "reload"
-    assert message["payload"]["changedPaths"] == ["pages/index.pyx"]
+    assert message["payload"]["changedPaths"] == ["pages/index.pyxl"]
 
 
 @pytest.mark.anyio

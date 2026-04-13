@@ -15,7 +15,7 @@ This doc is the deepest technical doc in the architecture section. It's
 written like a tour: we'll start with the problem, build up the
 algorithm one step at a time, then catalog the edge cases that the
 algorithm has to handle. By the end you'll be able to reason about any
-`.pyx` file the parser will see in the wild — and you'll know exactly
+`.pyxl` file the parser will see in the wild — and you'll know exactly
 why each guardrail exists.
 
 **File:** `pyxle/compiler/parser.py` (~1100 lines, the most sensitive
@@ -217,7 +217,7 @@ The AST extraction comes later, after the segments are concatenated.
 > "this file is mostly Python with a JSX section at the bottom". For
 > that file, the optimistic parse on the first call is the *only*
 > parse needed. The walker terminates after one `ast.parse` invocation
-> and we move on. Most real `.pyx` files take fewer than 10
+> and we move on. Most real `.pyxl` files take fewer than 10
 > milliseconds to parse end-to-end.
 
 ---
@@ -341,7 +341,7 @@ With the walker and the helpers in place, here's what happens for a
 real four-section file:
 
 ```python
-# pages/dashboard.pyx
+# pages/dashboard.pyxl
 from datetime import datetime         # ─┐
                                       #  │ Python segment 1:
 def format(dt):                       #  │ lines 0-3
@@ -455,7 +455,7 @@ line:
 When any signal fires, the heuristic re-runs `ast.parse` on the
 segment in isolation to recover the precise Python error message and
 emits it as a `[python]` diagnostic, pointing at the right line in
-the original `.pyx` source.
+the original `.pyxl` source.
 
 ### The false-positive guard
 
@@ -626,7 +626,7 @@ Two specific cases the parser defends against:
 
 ### Deep nesting → `MemoryError`
 
-A `.pyx` file containing 200 levels of nested list literals:
+A `.pyxl` file containing 200 levels of nested list literals:
 
 ```python
 @server
@@ -850,13 +850,13 @@ The complexity that does exist is concentrated in two places:
    where invalid Python silently flows into the JSX section
    (~120 lines).
 
-Both pieces exist because real-world `.pyx` files include things like
+Both pieces exist because real-world `.pyxl` files include things like
 syntax-highlighted code samples (the JS template literal case) and
 in-progress code-with-typos (the broken-Python case). The parser is
 written to be reliable on the median input *and* robust on the
 adversarial tail.
 
-When you write a `.pyx` file, you don't have to think about any of
+When you write a `.pyxl` file, you don't have to think about any of
 this. You just put the Python and the JSX in the same file, in any
 order, with as many alternating sections as makes sense. The parser
 figures it out.
@@ -868,7 +868,7 @@ figures it out.
 - **[The compiler](compiler.md)** — What happens *after* the parser:
   how `python_code` and `jsx_code` get written to disk as `.py` and
   `.jsx` artifacts, including the JSX import rewriter that turns
-  `import './foo.pyx'` into `import './foo.jsx'`.
+  `import './foo.pyxl'` into `import './foo.jsx'`.
 
 - **[The CLI](cli.md)** — How `pyxle check` uses tolerant mode to
   surface every diagnostic in every file in one pass, and how the

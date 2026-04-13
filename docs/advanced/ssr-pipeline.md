@@ -6,7 +6,7 @@ This document explains how Pyxle renders pages on the server. Understanding the 
 
 When a request hits a page route, Pyxle:
 
-1. **Resolves the route** -- matches the URL to a `.pyx` file
+1. **Resolves the route** -- matches the URL to a `.pyxl` file
 2. **Imports the server module** -- the compiled Python code from the `@server` section
 3. **Runs the loader** -- executes the `@server` function with the request
 4. **Resolves HEAD elements** -- evaluates the `HEAD` variable (static or dynamic)
@@ -51,8 +51,8 @@ pyxle dev --ssr-workers 0     # subprocess mode (no persistent workers)
 
 Head elements come from three sources, listed in order of increasing priority:
 
-1. **Layout `<Head>` blocks** -- from `layout.pyx` files up the directory tree
-2. **Page `HEAD` variable** -- from the Python section of the page's `.pyx` file
+1. **Layout `<Head>` blocks** -- from `layout.pyxl` files up the directory tree
+2. **Page `HEAD` variable** -- from the Python section of the page's `.pyxl` file
 3. **Page `<Head>` blocks** -- from `<Head>` components in the page's JSX
 
 The merge process:
@@ -108,10 +108,10 @@ Errors at each stage are handled differently:
 
 | Stage | Error type | Behaviour |
 |-------|-----------|-----------|
-| Loader | `LoaderError` | Renders nearest `error.pyx` with error context |
-| Loader | Other exceptions | Renders `error.pyx` or default error document |
-| HEAD evaluation | `HeadEvaluationError` | Renders `error.pyx` or default error document |
-| Component render | `ComponentRenderError` | Renders `error.pyx` or default error document |
+| Loader | `LoaderError` | Renders nearest `error.pyxl` with error context |
+| Loader | Other exceptions | Renders `error.pyxl` or default error document |
+| HEAD evaluation | `HeadEvaluationError` | Renders `error.pyxl` or default error document |
+| Component render | `ComponentRenderError` | Renders `error.pyxl` or default error document |
 
 In dev mode, the error overlay shows the error with breadcrumbs indicating which stage failed.
 

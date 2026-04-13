@@ -46,7 +46,7 @@ Open [http://localhost:8000](http://localhost:8000) in your browser. You should 
 
 When you ran `pyxle dev`, the framework:
 
-1. **Compiled** `pages/index.pyx` -- split the Python server code from the React JSX
+1. **Compiled** `pages/index.pyxl` -- split the Python server code from the React JSX
 2. **Started Vite** -- the JavaScript bundler that serves your React components with hot reload
 3. **Started Starlette** -- the Python ASGI server that handles routing, SSR, and API requests
 4. **Ran the `@server` loader** -- fetched data on the server and passed it as props to React
@@ -55,7 +55,7 @@ When you ran `pyxle dev`, the framework:
 
 ## 5. Make a change
 
-Open `pages/index.pyx` in your editor. Find the `title` value inside the `load_home` function and change it:
+Open `pages/index.pyxl` in your editor. Find the `title` value inside the `load_home` function and change it:
 
 ```python
 @server
@@ -80,7 +80,7 @@ This prints the route table derived from your `pages/` directory:
 
 ```
 Route          File                  Loader
-/              pages/index.pyx       load_home
+/              pages/index.pyxl       load_home
 /api/pulse     pages/api/pulse.py    --
 ```
 
@@ -90,10 +90,10 @@ Route          File                  Loader
 pyxle check
 ```
 
-This validates `.pyx` syntax, checks your config file, and reports any issues.
+This validates `.pyxl` syntax, checks your config file, and reports any issues.
 
 ## Next steps
 
 - Understand what each file does: [Project Structure](project-structure.md)
-- Learn the `.pyx` file format: [`.pyx` Files](../core-concepts/pyx-files.md)
+- Learn the `.pyxl` file format: [`.pyxl` Files](../core-concepts/pyxl-files.md)
 - Add a new page with data loading: [Data Loading](../core-concepts/data-loading.md)

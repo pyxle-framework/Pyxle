@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import logging
 import secrets
 from typing import Sequence
 
@@ -31,6 +32,8 @@ _COOKIE_NAME = "pyxle-csrf"
 _HEADER_NAME = "x-csrf-token"
 _FORM_FIELD = "_csrf_token"
 _TOKEN_LENGTH = 32
+
+_logger = logging.getLogger(__name__)
 
 
 class CsrfMiddleware:
@@ -75,6 +78,13 @@ class CsrfMiddleware:
         self._cookie_samesite = cookie_samesite
         self._exempt_paths: tuple[str, ...] = tuple(exempt_paths)
 
+        if not self._secret:
+            _logger.warning(
+                "CsrfMiddleware: no secret key provided (PYXLE_SECRET_KEY). "
+                "HMAC token verification is disabled — tokens are validated "
+                "by double-submit comparison only."
+            )
+
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
@@ -96,7 +106,8 @@ class CsrfMiddleware:
                     try:
                         form_data = await request.form()
                         submitted_token = form_data.get(_FORM_FIELD, "")
-                    except Exception:
+                    except Exception as exc:
+                        _logger.debug("CSRF form body parsing failed: %s", exc)
                         submitted_token = ""
 
             if not cookie_token or not submitted_token:
@@ -115,8 +126,14 @@ class CsrfMiddleware:
                 await response(scope, receive, send)
                 return
 
-        # Inject a fresh token cookie into every response.
-        token = _generate_token(self._secret)
+        # Reuse the existing valid cookie token when available to avoid
+        # race conditions with concurrent requests (M-9).  Only mint a
+        # fresh token when no valid cookie is present.
+        existing_cookie = request.cookies.get(self._cookie_name, "")
+        if existing_cookie and _verify_token_integrity(existing_cookie, self._secret):
+            token = existing_cookie
+        else:
+            token = _generate_token(self._secret)
 
         async def send_with_cookie(message: Message) -> None:
             if message["type"] == "http.response.start":
@@ -146,15 +163,54 @@ def _generate_token(secret: str) -> str:
     return raw
 
 
+def _compute_signature(raw: str, secret: str) -> str:
+    """Compute the HMAC-SHA256 signature for a raw token value."""
+    return hmac.new(secret.encode(), raw.encode(), hashlib.sha256).hexdigest()[:16]
+
+
+def _verify_token_integrity(token: str, secret: str) -> bool:
+    """Check that a token's HMAC signature is valid (when a secret is set).
+
+    Returns ``True`` if the token is structurally valid.  For unsigned tokens
+    (no secret), any non-empty token is considered valid.
+    """
+    if not token:
+        return False
+    if not secret:
+        # No secret → unsigned tokens; any non-empty value is acceptable.
+        return True
+    if "." not in token:
+        return False
+    raw, _, sig = token.rpartition(".")
+    if not raw or not sig:
+        return False
+    expected = _compute_signature(raw, secret)
+    return hmac.compare_digest(sig, expected)
+
+
 def _tokens_match(cookie_token: str, submitted_token: str, secret: str) -> bool:
     """Validate that the submitted token matches the cookie token.
 
-    In double-submit mode the client echoes the cookie value verbatim. We
-    use constant-time comparison to avoid timing attacks.
+    Performs two checks:
+
+    1. **Double-submit comparison** — the submitted token must match the
+       cookie token (constant-time).
+    2. **HMAC signature verification** (when a secret is configured) —
+       the cookie token's signature must be valid.  This prevents an
+       attacker who can set arbitrary cookies from forging tokens.
     """
     if not cookie_token or not submitted_token:
         return False
-    return hmac.compare_digest(cookie_token, submitted_token)
+
+    # Double-submit: submitted value must match cookie value.
+    if not hmac.compare_digest(cookie_token, submitted_token):
+        return False
+
+    # HMAC integrity: verify the cookie token was minted by this server.
+    if not _verify_token_integrity(cookie_token, secret):
+        return False
+
+    return True
 
 
 __all__ = ["CsrfMiddleware"]

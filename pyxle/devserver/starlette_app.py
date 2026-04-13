@@ -21,7 +21,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.routing import Mount, Router, WebSocketRoute
 from starlette.staticfiles import StaticFiles
-from starlette.types import Receive, Scope, Send
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from pyxle.cli.logger import ConsoleLogger
 from pyxle.ssr import (
@@ -79,6 +79,34 @@ class HttpOnlyStaticFiles(StaticFiles):
                 return
             return
         await super().__call__(scope, receive, send)
+
+
+_SECURITY_HEADERS: tuple[tuple[bytes, bytes], ...] = (
+    (b"x-content-type-options", b"nosniff"),
+    (b"x-frame-options", b"SAMEORIGIN"),
+    (b"referrer-policy", b"strict-origin-when-cross-origin"),
+)
+
+
+class _SecurityHeadersMiddleware:
+    """Inject standard security response headers (production only)."""
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        async def send_with_security_headers(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                headers = list(message.get("headers", []))
+                headers.extend(_SECURITY_HEADERS)
+                message = {**message, "headers": headers}
+            await send(message)
+
+        await self.app(scope, receive, send_with_security_headers)
 
 
 class StaticAssetsMiddleware:
@@ -409,6 +437,9 @@ def build_action_router(
     return router
 
 
+_MAX_ACTION_BODY_BYTES = 10 * 1024 * 1024  # 10 MB
+
+
 async def _dispatch_action(
     request: Request,
     module_key: str,
@@ -418,24 +449,47 @@ async def _dispatch_action(
     debug: bool = False,
 ) -> JSONResponse:
     """Shared dispatch logic for both specific and catch-all action handlers."""
+    from pyxle.devserver._security import SAFE_IDENTIFIER_RE
     from pyxle.runtime import ActionError
+
+    # L-9: reject obviously invalid action names early.
+    if not SAFE_IDENTIFIER_RE.match(action_name):
+        return JSONResponse(
+            {"ok": False, "error": "Invalid action name"},
+            status_code=400,
+        )
+
+    # L-10: reject oversized request bodies before doing any work.
+    content_length = request.headers.get("content-length")
+    if content_length and content_length.isdigit() and int(content_length) > _MAX_ACTION_BODY_BYTES:
+        return JSONResponse(
+            {"ok": False, "error": "Request body too large"},
+            status_code=413,
+        )
 
     try:
         module = _import_module(module_key, server_module_path, debug=debug)
     except ApiRouteError as exc:
-        return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
+        error_msg = str(exc) if debug else "Internal server error"
+        return JSONResponse({"ok": False, "error": error_msg}, status_code=500)
 
+    # M-5: collapse existence + decorator check to prevent enumeration.
     action_fn = getattr(module, action_name, None)
-    if action_fn is None:
+    if action_fn is None or not getattr(action_fn, "__pyxle_action__", False):
         return JSONResponse(
             {"ok": False, "error": f"Action '{action_name}' not found"},
             status_code=404,
         )
 
-    if not getattr(action_fn, "__pyxle_action__", False):
-        return JSONResponse(
-            {"ok": False, "error": f"'{action_name}' is not a @action function"},
-            status_code=400,
+    # I-5: warn when a synchronous function is decorated as @action.
+    if not inspect.iscoroutinefunction(action_fn):
+        import logging as _logging  # noqa: PLC0415
+
+        _logging.getLogger(__name__).warning(
+            "Action '%s' in module '%s' is synchronous. "
+            "Actions should be async functions.",
+            action_name,
+            module_key,
         )
 
     try:
@@ -445,8 +499,9 @@ async def _dispatch_action(
         if exc.data:
             payload["data"] = exc.data
         return JSONResponse(payload, status_code=exc.status_code)
-    except Exception as exc:  # pragma: no cover - surfaced to client as 500
-        return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
+    except Exception as exc:
+        error_msg = str(exc) if debug else "Internal server error"
+        return JSONResponse({"ok": False, "error": error_msg}, status_code=500)
 
     if not isinstance(result, dict):
         return JSONResponse(
@@ -555,7 +610,15 @@ def create_starlette_app(
 
     if settings.debug:
         vite_proxy = ViteProxy(settings, logger=console_logger)
-        overlay = OverlayManager(logger=console_logger)
+        overlay_origins: set[str] = {
+            f"http://localhost:{settings.starlette_port}",
+            f"http://127.0.0.1:{settings.starlette_port}",
+            f"http://localhost:{settings.vite_port}",
+            f"http://127.0.0.1:{settings.vite_port}",
+        }
+        overlay = OverlayManager(
+            logger=console_logger, allowed_origins=overlay_origins
+        )
 
         class _ViteProxyMiddleware(BaseHTTPMiddleware):
             def __init__(self, app):
@@ -586,16 +649,27 @@ def create_starlette_app(
 
         Browsers treat ``localhost`` and ``127.0.0.1`` as distinct origins,
         so both are listed when the server is on a loopback address.  When
-        bound to all interfaces (``0.0.0.0`` / ``::``), any hostname on the
-        Vite port is allowed via a regex so that LAN access (e.g. from a
-        phone) works too.
+        bound to all interfaces (``0.0.0.0`` / ``::``), LAN access is
+        allowed via a regex restricted to ``localhost``, loopback, and
+        RFC 1918 private IP ranges — **not** arbitrary hostnames.
         """
         import re  # noqa: PLC0415
 
         if host in _ALL_INTERFACES:
+            console_logger.warning(
+                "Dev server bound to all interfaces (0.0.0.0). "
+                "CORS allows localhost and private-network origins only."
+            )
+            # Match localhost, 127.0.0.1, and RFC 1918 private ranges only.
+            private_re = re.compile(
+                rf"^https?://(?:localhost|127\.0\.0\.1"
+                rf"|10\.\d{{1,3}}\.\d{{1,3}}\.\d{{1,3}}"
+                rf"|172\.(?:1[6-9]|2\d|3[01])\.\d{{1,3}}\.\d{{1,3}}"
+                rf"|192\.168\.\d{{1,3}}\.\d{{1,3}}):{port}$"
+            )
             return {
                 "allow_origins": [f"http://localhost:{port}", f"http://127.0.0.1:{port}"],
-                "allow_origin_regex": re.compile(rf"^https?://[^:/]+:{port}$").pattern,
+                "allow_origin_regex": private_re.pattern,
             }
         if host in _LOOPBACK_HOSTS:
             return {"allow_origins": [f"http://localhost:{port}", f"http://127.0.0.1:{port}"]}
@@ -630,12 +704,16 @@ def create_starlette_app(
         # cross-origin requests from the Vite dev server (different port).
         from starlette.middleware.cors import CORSMiddleware
 
+        vite_cors = _vite_dev_cors_kwargs(settings.vite_host, settings.vite_port)
+        # Do not combine allow_credentials=True with a wildcard-style
+        # origin regex — only set credentials for explicit origins.
+        uses_regex = "allow_origin_regex" in vite_cors
         cors_middleware = Middleware(
             CORSMiddleware,
-            **_vite_dev_cors_kwargs(settings.vite_host, settings.vite_port),
+            **vite_cors,
             allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
             allow_headers=["*"],
-            allow_credentials=True,
+            allow_credentials=not uses_regex,
             max_age=600,
         )
 
@@ -646,12 +724,18 @@ def create_starlette_app(
 
         from .csrf import CsrfMiddleware
 
+        # In production, default cookie_secure to True unless explicitly
+        # overridden by the user configuration.
+        cookie_secure = settings.csrf.cookie_secure
+        if not settings.debug and not cookie_secure:
+            cookie_secure = True
+
         csrf_middleware = Middleware(
             CsrfMiddleware,
             secret=os.environ.get("PYXLE_SECRET_KEY", ""),
             cookie_name=settings.csrf.cookie_name,
             header_name=settings.csrf.header_name,
-            cookie_secure=settings.csrf.cookie_secure,
+            cookie_secure=cookie_secure,
             cookie_samesite=settings.csrf.cookie_samesite,
             exempt_paths=settings.csrf.exempt_paths,
         )
@@ -690,6 +774,10 @@ def create_starlette_app(
         from starlette.middleware.gzip import GZipMiddleware  # noqa: PLC0415
 
         middleware_stack.append(Middleware(GZipMiddleware, minimum_size=500))
+
+    # Security response headers in production mode.
+    if not settings.debug:
+        middleware_stack.append(Middleware(_SecurityHeadersMiddleware))
 
     if cors_middleware is not None:
         middleware_stack.append(cors_middleware)
@@ -737,7 +825,7 @@ def create_starlette_app(
     app.router.add_route("/healthz", _healthz_endpoint, methods=["GET"])
     app.router.add_route("/readyz", _readyz_endpoint, methods=["GET"])
 
-    # Register the catch-all 404 handler using not-found.pyx boundaries.
+    # Register the catch-all 404 handler using not-found.pyxl boundaries.
     if error_boundaries.has_not_found_pages:
         not_found_handler = _make_not_found_handler(
             settings=settings,
@@ -762,7 +850,7 @@ def _make_not_found_handler(
     overlay: OverlayManager | None,
     error_boundaries: ErrorBoundaryRegistry,
 ):
-    """Create a catch-all handler that renders the nearest ``not-found.pyx``."""
+    """Create a catch-all handler that renders the nearest ``not-found.pyxl``."""
 
     from starlette.responses import HTMLResponse as _HTMLResponse
 

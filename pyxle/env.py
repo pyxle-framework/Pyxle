@@ -210,6 +210,13 @@ def get_public_env_vars() -> dict[str, str]:
 
     These are the only variables that the build pipeline may safely embed in
     client-side JavaScript bundles.
+
+    .. note::
+
+        This function reads ``os.environ`` at call time. The Vite ``define``
+        snapshot in the dev server is captured once at startup (see
+        :func:`pyxle.devserver.client_files._build_public_env_defines`).
+        The two may diverge if variables are changed after the server starts.
     """
     prefix = "PYXLE_PUBLIC_"
     return {k: v for k, v in os.environ.items() if k.startswith(prefix)}

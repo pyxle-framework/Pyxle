@@ -24,7 +24,7 @@ from pyxle.ssr.view import (
 
 def _stub_page_route(
     path: str = "/test",
-    source_rel: str = "test.pyx",
+    source_rel: str = "test.pyxl",
 ) -> PageRoute:
     return PageRoute(
         path=path,
@@ -95,7 +95,7 @@ class TestBuildErrorContext:
 
 class TestTryErrorBoundary:
     def _error_page(self) -> PageRoute:
-        return _stub_page_route(path="/error", source_rel="error.pyx")
+        return _stub_page_route(path="/error", source_rel="error.pyxl")
 
     def _registry_with_root(self) -> ErrorBoundaryRegistry:
         return ErrorBoundaryRegistry(
@@ -238,7 +238,7 @@ class TestBuildNotFoundResponse:
         assert result is None
 
     def test_returns_none_when_boundary_fails(self):
-        nf_page = _stub_page_route("/not-found", "not-found.pyx")
+        nf_page = _stub_page_route("/not-found", "not-found.pyxl")
         registry = ErrorBoundaryRegistry(
             error_pages={},
             not_found_pages={".": nf_page},

@@ -46,7 +46,7 @@ The `pyxle` package includes:
 | Component | Purpose |
 |-----------|---------|
 | `pyxle` CLI | Project scaffolding, dev server, build pipeline |
-| `pyxle.runtime` | `@server` and `@action` decorators for your `.pyx` files |
+| `pyxle.runtime` | `@server` and `@action` decorators for your `.pyxl` files |
 | `pyxle.config` | Configuration loading and validation |
 | Starlette | ASGI web server (installed as a dependency) |
 | Uvicorn | ASGI server runner (installed as a dependency) |

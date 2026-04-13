@@ -30,16 +30,63 @@ for (const method of ['log', 'info', 'warn', 'error', 'debug', 'dir', 'trace']) 
   }
 }
 
+/**
+ * Verify that a resolved path stays within the given boundary directory.
+ *
+ * Returns `true` when the resolved path is equal to or nested inside the
+ * boundary.  Prevents path-traversal attacks via imports like
+ * `/pages/../../../../etc/passwd`.
+ */
+function isPathWithinBoundary(resolved, boundary) {
+  return resolved === boundary || resolved.startsWith(boundary + path.sep);
+}
+
+/**
+ * Create a size-bounded LRU cache backed by a Map.
+ *
+ * Evicts the least-recently-used entry when the cache exceeds *maxSize*.
+ * Prevents unbounded memory growth in long-running worker processes.
+ */
+function createLruCache(maxSize) {
+  const map = new Map();
+  return {
+    has(key) { return map.has(key); },
+    get(key) {
+      const val = map.get(key);
+      if (val !== undefined) {
+        // Move to end (most-recently-used).
+        map.delete(key);
+        map.set(key, val);
+      }
+      return val;
+    },
+    set(key, val) {
+      if (map.has(key)) map.delete(key);
+      else if (map.size >= maxSize) {
+        const oldest = map.keys().next().value;
+        map.delete(oldest);
+      }
+      map.set(key, val);
+    },
+    delete(key) { map.delete(key); },
+    clear() { map.clear(); },
+    get size() { return map.size; },
+  };
+}
+
 // Cache heavy modules per project root so they are loaded once, not per request.
-const _moduleCache = new Map();
+// Bounded to 10 entries — one per project root; rarely more than 1 in practice.
+const _moduleCache = createLruCache(10);
 
 // Cache compiled component bundles so esbuild is only called once per component.
 // Key: resolved componentPath, Value: { moduleExports, styleDescriptors }
-const _bundleCache = new Map();
+// Bounded to 100 entries — a large app may have hundreds of pages but only a
+// subset is rendered between invalidation cycles.
+const _bundleCache = createLruCache(100);
 
 // Cache postcss.config.* presence per project root so we don't stat the
-// filesystem on every render.
-const _postcssCache = new Map();
+// filesystem on every render.  Bounded to 5 — effectively 1 per project.
+const _postcssCache = createLruCache(5);
 
 const POSTCSS_CONFIG_FILENAMES = [
   'postcss.config.cjs',
@@ -214,14 +261,22 @@ async function renderRequest({ componentPath, props, clientRoot, projectRoot: pr
         {
           name: 'pyxle-pages-alias',
           setup(build) {
-            build.onResolve({ filter: /^\/(pages|routes)\// }, (args) => ({
-              path: path.resolve(workingDir, args.path.slice(1)),
-            }));
+            build.onResolve({ filter: /^\/(pages|routes)\// }, (args) => {
+              const resolved = path.resolve(workingDir, args.path.slice(1));
+              if (!isPathWithinBoundary(resolved, workingDir)) {
+                return { errors: [{ text: `Import path resolves outside the project: ${args.path}` }] };
+              }
+              return { path: resolved };
+            });
             build.onResolve({ filter: /^pyxle\/client(?:\/.*)?$/ }, (args) => {
               const remainder = args.path.slice('pyxle/client'.length);
               const normalized =
                 remainder === '' || remainder === '/' ? 'pyxle/client.js' : `pyxle${remainder}`;
-              return { path: path.resolve(workingDir, normalized) };
+              const resolved = path.resolve(workingDir, normalized);
+              if (!isPathWithinBoundary(resolved, workingDir)) {
+                return { errors: [{ text: `Import path resolves outside the project: ${args.path}` }] };
+              }
+              return { path: resolved };
             });
           },
         },

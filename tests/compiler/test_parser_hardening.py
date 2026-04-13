@@ -443,7 +443,7 @@ class TestAmbiguousLines:
 
 
 class TestFullFileParsing:
-    """End-to-end parsing of complete .pyx files with tricky content."""
+    """End-to-end parsing of complete .pyxl files with tricky content."""
 
     def test_python_string_containing_jsx_is_not_jsx(self):
         """Python strings that contain JSX-like content stay in Python."""

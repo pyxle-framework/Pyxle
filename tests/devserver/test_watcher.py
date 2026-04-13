@@ -232,7 +232,7 @@ def test_rebuild_triggers_once_after_debounce(
     def build(settings: DevServerSettings, **_: object) -> BuildSummary:
         rebuild_calls.append(1)
         assert settings.pages_dir == project.pages_dir
-        return BuildSummary(compiled_pages=["index.pyx"], copied_api_modules=["api/pulse.py"], removed=[])
+        return BuildSummary(compiled_pages=["index.pyxl"], copied_api_modules=["api/pulse.py"], removed=[])
 
     watcher = ProjectWatcher(
         project,
@@ -241,7 +241,7 @@ def test_rebuild_triggers_once_after_debounce(
         build_function=build,
     )
 
-    watcher.notify_paths([project.pages_dir / "index.pyx"])
+    watcher.notify_paths([project.pages_dir / "index.pyxl"])
     watcher.notify_paths([project.pages_dir / "api/pulse.py"])
 
     assert len(handles) == 2
@@ -262,16 +262,16 @@ def test_project_watcher_invokes_rebuild_callback(
     watcher = ProjectWatcher(
         project,
         timer_factory=factory,
-        build_function=lambda settings, **_: BuildSummary(compiled_pages=["index.pyx"]),
+        build_function=lambda settings, **_: BuildSummary(compiled_pages=["index.pyxl"]),
         on_rebuild=lambda payload: stats.append(payload),
     )
 
-    watcher.notify_paths([project.pages_dir / "index.pyx"])
+    watcher.notify_paths([project.pages_dir / "index.pyxl"])
     handles[-1].trigger()
 
     assert stats, "expected callback invocation"
     assert stats[0].summary is not None
-    assert stats[0].summary.compiled_pages == ["index.pyx"]
+    assert stats[0].summary.compiled_pages == ["index.pyxl"]
 
 
 def test_project_watcher_flush_without_pending(project: DevServerSettings) -> None:
@@ -322,7 +322,7 @@ def test_rebuild_reports_filesystem_error(
         build_function=failing_build,
     )
 
-    watcher.notify_paths([project.pages_dir / "index.pyx"])
+    watcher.notify_paths([project.pages_dir / "index.pyxl"])
     handles[-1].trigger()
 
     assert any("Filesystem error" in message for message in messages)
@@ -347,14 +347,14 @@ def test_project_watcher_rebuilds_only_changed_page(
         return path
 
     index_source = write(
-        settings.pages_dir / "index.pyx",
+        settings.pages_dir / "index.pyxl",
         "import React from 'react';\n\n"
         "export default function Index() {\n"
         "  return <div>Index</div>;\n"
         "}\n",
     )
     write(
-        settings.pages_dir / "about.pyx",
+        settings.pages_dir / "about.pyxl",
         "import React from 'react';\n\n"
         "export default function About() {\n"
         "  return <div>About</div>;\n"
@@ -366,7 +366,7 @@ def test_project_watcher_rebuilds_only_changed_page(
     )
 
     initial_summary = build_once(settings, force_rebuild=True)
-    assert set(initial_summary.compiled_pages) == {"about.pyx", "index.pyx"}
+    assert set(initial_summary.compiled_pages) == {"about.pyxl", "index.pyxl"}
 
     client_index = settings.client_build_dir / "pages/index.jsx"
     client_about = settings.client_build_dir / "pages/about.jsx"
@@ -398,9 +398,9 @@ def test_project_watcher_rebuilds_only_changed_page(
     assert stats is not None
     summary = stats.summary
     assert summary is not None
-    assert summary.compiled_pages == ["index.pyx"]
+    assert summary.compiled_pages == ["index.pyxl"]
     assert summary.copied_api_modules == []
-    assert "about.pyx" in summary.skipped
+    assert "about.pyxl" in summary.skipped
     assert "api/pulse.py" in summary.skipped
 
     assert client_index.stat().st_mtime_ns > index_mtime
@@ -414,7 +414,7 @@ def test_project_event_handler_prefers_dest_path(project: DevServerSettings) -> 
     class DummyEvent:
         is_directory = False
         src_path = "ignored"
-        dest_path = str(project.pages_dir / "moved.pyx")
+        dest_path = str(project.pages_dir / "moved.pyxl")
 
     handler.on_any_event(DummyEvent())
 
@@ -432,13 +432,13 @@ def test_format_paths_truncates_and_handles_external(project: DevServerSettings)
 
     external = Path("/tmp/elsewhere.txt")
     paths = [
-        project.pages_dir / "file_0.pyx",
+        project.pages_dir / "file_0.pyxl",
         external,
-        project.pages_dir / "file_1.pyx",
-        project.pages_dir / "file_2.pyx",
-        project.pages_dir / "file_3.pyx",
-        project.pages_dir / "file_4.pyx",
-        project.pages_dir / "file_5.pyx",
+        project.pages_dir / "file_1.pyxl",
+        project.pages_dir / "file_2.pyxl",
+        project.pages_dir / "file_3.pyxl",
+        project.pages_dir / "file_4.pyxl",
+        project.pages_dir / "file_5.pyxl",
     ]
 
     output = watcher._format_paths(paths)

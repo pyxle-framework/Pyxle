@@ -7,6 +7,7 @@ import json
 import traceback
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence, Set
+from urllib.parse import urlparse
 
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
@@ -22,12 +23,59 @@ class OverlayEvent:
 
 
 class OverlayManager:
-    """Tracks websocket connections and broadcasts overlay events."""
+    """Tracks websocket connections and broadcasts overlay events.
 
-    def __init__(self, *, logger: Optional[ConsoleLogger] = None) -> None:
+    Parameters
+    ----------
+    allowed_origins:
+        Set of allowed WebSocket origins (e.g. ``{"http://localhost:8000"}``).
+        An empty set disables origin validation (not recommended).
+    """
+
+    def __init__(
+        self,
+        *,
+        logger: Optional[ConsoleLogger] = None,
+        allowed_origins: Set[str] | None = None,
+    ) -> None:
         self._connections: Set[WebSocket] = set()
         self._lock = asyncio.Lock()
         self._logger = logger or ConsoleLogger()
+        self._allowed_origins: Set[str] = allowed_origins or set()
+
+    def _is_allowed_origin(self, origin: str) -> bool:
+        """Check whether *origin* is in the allowed set.
+
+        When no allowed origins are configured, all origins are accepted
+        (backwards-compatible default for dev servers started without
+        explicit configuration).
+        """
+        if not self._allowed_origins:
+            return True
+        if not origin:
+            # Missing Origin header — browsers always send it for
+            # cross-origin WebSocket, so an absent header indicates
+            # a same-origin connection or a non-browser client.
+            return True
+        # Normalise trailing slashes for comparison.
+        normalised = origin.rstrip("/")
+        if normalised in self._allowed_origins:
+            return True
+        # Allow the origin if its host part is localhost/127.0.0.1
+        # and the port matches one of the allowed origins.
+        try:
+            parsed = urlparse(normalised)
+            if parsed.hostname in ("localhost", "127.0.0.1"):
+                for allowed in self._allowed_origins:
+                    allowed_parsed = urlparse(allowed)
+                    if (
+                        allowed_parsed.hostname in ("localhost", "127.0.0.1")
+                        and parsed.port == allowed_parsed.port
+                    ):
+                        return True
+        except Exception:  # pragma: no cover — defensive
+            pass
+        return False
 
     async def register(self, websocket: WebSocket) -> None:
         await websocket.accept()
@@ -88,6 +136,11 @@ class OverlayManager:
         )
 
     async def websocket_endpoint(self, websocket: WebSocket) -> None:
+        origin = websocket.headers.get("origin", "")
+        if not self._is_allowed_origin(origin):
+            await websocket.close(code=4003)
+            return
+
         await self.register(websocket)
         try:
             while True:

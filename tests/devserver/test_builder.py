@@ -21,7 +21,7 @@ def project(tmp_path: Path) -> DevServerSettings:
 
 def create_sample_sources(settings: DevServerSettings) -> None:
     write_file(
-        settings.pages_dir / "about.pyx",
+        settings.pages_dir / "about.pyxl",
         "import React from 'react';\n\nexport default function About() {\n  return <div>About</div>;\n}\n",
     )
     write_file(
@@ -48,7 +48,7 @@ def read_meta(settings: DevServerSettings) -> dict[str, object]:
 def test_build_once_compiles_pages_and_copies_api(project: DevServerSettings) -> None:
     summary = build_once(project)
 
-    assert summary.compiled_pages == ["about.pyx"]
+    assert summary.compiled_pages == ["about.pyxl"]
     assert summary.copied_api_modules == ["api/pulse.py"]
     assert summary.copied_client_assets == ["components/layout.jsx"]
     assert summary.skipped == []
@@ -61,7 +61,7 @@ def test_build_once_compiles_pages_and_copies_api(project: DevServerSettings) ->
     assert (project.build_root / "server/api/pulse.py").exists()
 
     metadata = read_meta(project)
-    assert set(metadata["sources"].keys()) == {"about.pyx", "api/pulse.py", "components/layout.jsx"}
+    assert set(metadata["sources"].keys()) == {"about.pyxl", "api/pulse.py", "components/layout.jsx"}
 
 
 def test_build_once_skips_unchanged_sources(project: DevServerSettings) -> None:
@@ -73,7 +73,7 @@ def test_build_once_skips_unchanged_sources(project: DevServerSettings) -> None:
     assert summary.copied_api_modules == []
     assert summary.copied_client_assets == []
     assert summary.removed == []
-    assert set(summary.skipped) == {"about.pyx", "api/pulse.py", "components/layout.jsx"}
+    assert set(summary.skipped) == {"about.pyxl", "api/pulse.py", "components/layout.jsx"}
 
 
 def test_build_once_reacts_to_changes_and_deletions(project: DevServerSettings) -> None:
@@ -81,14 +81,14 @@ def test_build_once_reacts_to_changes_and_deletions(project: DevServerSettings) 
 
     # Modify the page and remove the API module.
     write_file(
-        project.pages_dir / "about.pyx",
+        project.pages_dir / "about.pyxl",
         "import React from 'react';\n\nexport default function About() {\n  return <div>Updated</div>;\n}\n",
     )
     (project.pages_dir / "api/pulse.py").unlink()
 
     summary = build_once(project)
 
-    assert summary.compiled_pages == ["about.pyx"]
+    assert summary.compiled_pages == ["about.pyxl"]
     assert summary.copied_api_modules == []
     assert summary.copied_client_assets == []
     assert summary.removed == ["api/pulse.py"]
@@ -99,7 +99,7 @@ def test_build_once_reacts_to_changes_and_deletions(project: DevServerSettings) 
     assert (project.build_root / "server/pages/about.py").exists()
 
     metadata = read_meta(project)
-    assert set(metadata["sources"].keys()) == {"about.pyx", "components/layout.jsx"}
+    assert set(metadata["sources"].keys()) == {"about.pyxl", "components/layout.jsx"}
 
 
 def test_build_once_force_rebuild_reprocesses_all_sources(project: DevServerSettings) -> None:
@@ -107,7 +107,7 @@ def test_build_once_force_rebuild_reprocesses_all_sources(project: DevServerSett
 
     summary = build_once(project, force_rebuild=True)
 
-    assert summary.compiled_pages == ["about.pyx"]
+    assert summary.compiled_pages == ["about.pyxl"]
     assert summary.copied_api_modules == ["api/pulse.py"]
     assert summary.copied_client_assets == ["components/layout.jsx"]
     assert summary.skipped == []
@@ -117,11 +117,11 @@ def test_build_once_handles_page_removal(project: DevServerSettings) -> None:
     build_once(project)
 
     # Remove the page source to trigger artifact cleanup.
-    (project.pages_dir / "about.pyx").unlink()
+    (project.pages_dir / "about.pyxl").unlink()
 
     summary = build_once(project)
 
-    assert summary.removed == ["about.pyx"]
+    assert summary.removed == ["about.pyxl"]
     assert not (project.build_root / "client/pages/about.jsx").exists()
     assert not (project.build_root / "server/pages/about.py").exists()
     assert not (project.build_root / "metadata/pages/about.json").exists()
@@ -154,7 +154,7 @@ def test_build_once_syncs_global_stylesheets(tmp_path: Path) -> None:
     (root / "pages").mkdir(parents=True)
     (root / "public").mkdir()
     write_file(
-        root / "pages" / "index.pyx",
+        root / "pages" / "index.pyxl",
         "import React from 'react';\n\nexport default function Home() {\n  return <div>Home</div>;\n}\n",
     )
     style_path = root / "styles" / "global.css"
@@ -186,7 +186,7 @@ def test_build_once_syncs_global_scripts(tmp_path: Path) -> None:
     (root / "pages").mkdir(parents=True)
     (root / "public").mkdir()
     write_file(
-        root / "pages" / "index.pyx",
+        root / "pages" / "index.pyxl",
         "import React from 'react';\n\nexport default function Home() {\n  return <div>Home</div>;\n}\n",
     )
     script_path = root / "scripts" / "analytics.js"

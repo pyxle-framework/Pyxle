@@ -19,12 +19,12 @@ def project(tmp_path: Path) -> DevServerSettings:
     settings = DevServerSettings.from_project_root(root)
 
     write_file(
-        settings.pages_dir / "index.pyx",
+        settings.pages_dir / "index.pyxl",
         """\n\nHEAD = \"<title>Home</title>\"\n\n@server\nasync def load_home(request):\n    return {\"message\": \"hi\"}\n\n# --- JavaScript/PSX (Client + Server) ---\n\nimport React from 'react';\n\nexport default function Home({ data }) {\n    return <div>{data.message}</div>;\n}\n""",
     )
 
     write_file(
-        settings.pages_dir / "posts/[id].pyx",
+        settings.pages_dir / "posts/[id].pyxl",
         """import React from 'react';\n\nexport default function Post({ data }) {\n    return <article>{data.title}</article>;\n}\n""",
     )
 
@@ -66,14 +66,14 @@ def test_metadata_registry_includes_pages_and_apis(project: DevServerSettings) -
     assert home.server_asset_path == "/pages/index.py"
     assert home.module_key == "pyxle.server.pages.index"
     assert home.head_elements == ("<title>Home</title>",)
-    assert metadata.sources["index.pyx"].content_hash == home.content_hash
+    assert metadata.sources["index.pyxl"].content_hash == home.content_hash
 
     dynamic_page = registry.find_page("/posts/{id}")
     assert dynamic_page is not None
     assert dynamic_page.loader_name is None
     assert dynamic_page.module_key == "pyxle.server.pages.posts.id"
     assert dynamic_page.head_elements == ()
-    assert metadata.sources["posts/[id].pyx"].content_hash == dynamic_page.content_hash
+    assert metadata.sources["posts/[id].pyxl"].content_hash == dynamic_page.content_hash
 
     api_entry = registry.find_api("/api/greet")
     assert api_entry is not None
@@ -213,41 +213,41 @@ def test_find_layout_head_jsx_blocks_no_layout(project: DevServerSettings) -> No
 
     build_once(project)
 
-    # A page at root with no layout.pyx
-    blocks = find_layout_head_jsx_blocks(project, Path("index.pyx"))
+    # A page at root with no layout.pyxl
+    blocks = find_layout_head_jsx_blocks(project, Path("index.pyxl"))
     assert blocks == ()
 
 
 def test_find_layout_head_jsx_blocks_root_layout(project: DevServerSettings) -> None:
-    """Test finding head blocks from root layout.pyx."""
+    """Test finding head blocks from root layout.pyxl."""
     from pyxle.devserver.registry import find_layout_head_jsx_blocks
 
-    # Write a layout.pyx at the root
+    # Write a layout.pyxl at the root
     write_file(
-        project.pages_dir / "layout.pyx",
+        project.pages_dir / "layout.pyxl",
         """\n\nHEAD = "<meta name='viewport' content='width=device-width'/>"\n\nimport React from 'react';\n\nexport default function Layout({ children }) {\n    return <div>{children}</div>;\n}\n<Head>\n<title>Layout Title</title>\n</Head>\n""",
     )
 
     build_once(project)
-    blocks = find_layout_head_jsx_blocks(project, Path("index.pyx"))
+    blocks = find_layout_head_jsx_blocks(project, Path("index.pyxl"))
     assert len(blocks) > 0
     assert any("<title>Layout Title</title>" in block for block in blocks)
 
 
 def test_find_layout_head_jsx_blocks_nested_layout(project: DevServerSettings) -> None:
-    """Test finding head blocks from nested layout.pyx."""
+    """Test finding head blocks from nested layout.pyxl."""
     from pyxle.devserver.registry import find_layout_head_jsx_blocks
 
     # Write a nested layout
     write_file(
-        project.pages_dir / "posts" / "layout.pyx",
+        project.pages_dir / "posts" / "layout.pyxl",
         """\n\nimport React from 'react';\n\nexport default function PostsLayout({ children }) {\n    return <div>{children}</div>;\n}\n<Head>\n<meta name='posts-section' content='true'/>\n</Head>\n""",
     )
 
     build_once(project)
     
     # Page in the posts directory should find the posts layout
-    blocks = find_layout_head_jsx_blocks(project, Path("posts/[id].pyx"))
+    blocks = find_layout_head_jsx_blocks(project, Path("posts/[id].pyxl"))
     assert len(blocks) > 0
     assert any("posts-section" in block for block in blocks)
 
@@ -258,20 +258,20 @@ def test_find_layout_head_jsx_blocks_layout_hierarchy(project: DevServerSettings
 
     # Write root layout
     write_file(
-        project.pages_dir / "layout.pyx",
+        project.pages_dir / "layout.pyxl",
         """\n\nimport React from 'react';\n\nexport default function RootLayout({ children }) {\n    return <html>{children}</html>;\n}\n<Head>\n<meta name='root' content='true'/>\n</Head>\n""",
     )
 
     # Write nested layout
     write_file(
-        project.pages_dir / "posts" / "layout.pyx",
+        project.pages_dir / "posts" / "layout.pyxl",
         """\n\nimport React from 'react';\n\nexport default function PostsLayout({ children }) {\n    return <section>{children}</section>;\n}\n<Head>\n<meta name='posts' content='true'/>\n</Head>\n""",
     )
 
     build_once(project)
     
     # Page in posts directory should find both layouts
-    blocks = find_layout_head_jsx_blocks(project, Path("posts/[id].pyx"))
+    blocks = find_layout_head_jsx_blocks(project, Path("posts/[id].pyxl"))
     assert len(blocks) >= 2
     # Should have both meta tags
     all_blocks = " ".join(blocks)

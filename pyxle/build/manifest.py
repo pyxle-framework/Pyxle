@@ -11,7 +11,8 @@ def load_manifest(path: Path | str) -> Dict[str, Any]:
     """Load and validate a page-manifest.json file.
 
     Returns the parsed manifest dictionary. Raises ``ValueError`` when the
-    file does not contain a valid JSON object.
+    file does not contain a valid JSON object or when any asset path
+    contains path-traversal sequences.
     """
     manifest_path = Path(path)
     with manifest_path.open("r", encoding="utf-8") as fh:
@@ -23,4 +24,36 @@ def load_manifest(path: Path | str) -> Dict[str, Any]:
             f"got {type(data).__name__}"
         )
 
+    _validate_asset_paths(data, manifest_path)
+
     return data
+
+
+def _validate_asset_paths(data: Dict[str, Any], manifest_path: Path) -> None:
+    """Ensure no asset file path escapes the expected build directory.
+
+    Rejects paths containing ``..`` or starting with ``/`` to prevent a
+    compromised Vite build from referencing arbitrary filesystem locations.
+    """
+    for route_key, entry in data.items():
+        if not isinstance(entry, dict):
+            continue
+        client = entry.get("client")
+        if not isinstance(client, dict):
+            continue
+        file_val = client.get("file", "")
+        if isinstance(file_val, str):
+            _check_safe_path(file_val, route_key, "file", manifest_path)
+        for css_asset in client.get("css", []):
+            if isinstance(css_asset, str):
+                _check_safe_path(css_asset, route_key, "css", manifest_path)
+
+
+def _check_safe_path(
+    value: str, route_key: str, field: str, manifest_path: Path
+) -> None:
+    if ".." in value or value.startswith("/"):
+        raise ValueError(
+            f"Manifest {field} entry for '{route_key}' in "
+            f"'{manifest_path}' contains unsafe path: '{value}'"
+        )

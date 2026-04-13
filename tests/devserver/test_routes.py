@@ -22,27 +22,27 @@ def project(tmp_path: Path) -> DevServerSettings:
     settings = DevServerSettings.from_project_root(root)
 
     write_file(
-        settings.pages_dir / "index.pyx",
+        settings.pages_dir / "index.pyxl",
         """\n\nHEAD = \"<title>Home</title>\"\n\n@server\nasync def load_home(request):\n    return {\"message\": \"hi\"}\n\n# --- JavaScript/PSX (Client + Server) ---\n\nimport React from 'react';\n\nexport default function Home({ data }) {\n    return <div>{data.message}</div>;\n}\n""",
     )
 
     write_file(
-        settings.pages_dir / "blog/index.pyx",
+        settings.pages_dir / "blog/index.pyxl",
         """import React from 'react';\n\nexport default function BlogIndex() {\n    return <section>Blog</section>;\n}\n""",
     )
 
     write_file(
-        settings.pages_dir / "posts/[id].pyx",
+        settings.pages_dir / "posts/[id].pyxl",
         """import React from 'react';\n\nexport default function Post({ data }) {\n    return <article>{data.title}</article>;\n}\n""",
     )
 
     write_file(
-        settings.pages_dir / "docs/[[...slug]].pyx",
+        settings.pages_dir / "docs/[[...slug]].pyxl",
         """import React from 'react';\n\nexport default function Docs() {\n    return <article>Docs</article>;\n}\n""",
     )
 
     write_file(
-        settings.pages_dir / "(marketing)/about.pyx",
+        settings.pages_dir / "(marketing)/about.pyxl",
         """import React from 'react';\n\nexport default function About() {\n    return <section>About</section>;\n}\n""",
     )
 
@@ -70,21 +70,21 @@ def write_file(path: Path, content: str) -> None:
 
 
 def test_route_path_from_relative_converts_dynamic_segments() -> None:
-    assert route_path_from_relative(Path("index.pyx")) == "/"
-    assert route_path_from_relative(Path("posts/[id].pyx")) == "/posts/{id}"
-    assert route_path_from_relative(Path("blog/index.pyx")) == "/blog"
+    assert route_path_from_relative(Path("index.pyxl")) == "/"
+    assert route_path_from_relative(Path("posts/[id].pyxl")) == "/posts/{id}"
+    assert route_path_from_relative(Path("blog/index.pyxl")) == "/blog"
     assert route_path_from_relative(Path("api/posts/[id].py")) == "/api/posts/{id}"
-    assert route_path_from_relative(Path("(marketing)/about.pyx")) == "/about"
-    assert route_path_from_relative(Path("docs/[...slug].pyx")) == "/docs/{slug:path}"
-    assert route_path_from_relative(Path("[[...slug]].pyx")) == "/"
+    assert route_path_from_relative(Path("(marketing)/about.pyxl")) == "/about"
+    assert route_path_from_relative(Path("docs/[...slug].pyxl")) == "/docs/{slug:path}"
+    assert route_path_from_relative(Path("[[...slug]].pyxl")) == "/"
 
 
 def test_route_path_variants_include_optional_catchall() -> None:
-    spec = route_path_variants_from_relative(Path("docs/[[...slug]].pyx"))
+    spec = route_path_variants_from_relative(Path("docs/[[...slug]].pyxl"))
     assert spec.primary == "/docs"
     assert spec.aliases == ("/docs/{slug:path}",)
 
-    root_spec = route_path_variants_from_relative(Path("[[...segments]].pyx"))
+    root_spec = route_path_variants_from_relative(Path("[[...segments]].pyxl"))
     assert root_spec.primary == "/"
     assert root_spec.aliases == ("/{segments:path}",)
 
@@ -136,7 +136,7 @@ def test_build_route_table_generates_expected_descriptors(project: DevServerSett
 
     grouped_route = table.find_page("/about")
     assert grouped_route is not None
-    assert grouped_route.source_relative_path.as_posix() == "(marketing)/about.pyx"
+    assert grouped_route.source_relative_path.as_posix() == "(marketing)/about.pyxl"
 
     api_route = table.find_api("/api/posts/{id}")
     assert api_route is not None

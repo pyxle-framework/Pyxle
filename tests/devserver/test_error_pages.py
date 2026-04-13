@@ -25,17 +25,17 @@ class TestFilenameClassification:
     @pytest.mark.parametrize(
         "path,expected",
         [
-            ("error.pyx", True),
-            ("not-found.pyx", True),
-            ("dashboard/error.pyx", True),
-            ("dashboard/not-found.pyx", True),
-            ("deep/nested/dir/error.pyx", True),
-            ("index.pyx", False),
-            ("about.pyx", False),
+            ("error.pyxl", True),
+            ("not-found.pyxl", True),
+            ("dashboard/error.pyxl", True),
+            ("dashboard/not-found.pyxl", True),
+            ("deep/nested/dir/error.pyxl", True),
+            ("index.pyxl", False),
+            ("about.pyxl", False),
             ("error.py", False),
             ("error.tsx", False),
-            ("my-error.pyx", False),
-            ("errors.pyx", False),
+            ("my-error.pyxl", False),
+            ("errors.pyxl", False),
         ],
     )
     def test_is_error_boundary_file(self, path: str, expected: bool):
@@ -44,10 +44,10 @@ class TestFilenameClassification:
     @pytest.mark.parametrize(
         "path,expected",
         [
-            ("error.pyx", True),
-            ("dashboard/error.pyx", True),
-            ("not-found.pyx", False),
-            ("index.pyx", False),
+            ("error.pyxl", True),
+            ("dashboard/error.pyxl", True),
+            ("not-found.pyxl", False),
+            ("index.pyxl", False),
         ],
     )
     def test_is_error_page(self, path: str, expected: bool):
@@ -56,19 +56,19 @@ class TestFilenameClassification:
     @pytest.mark.parametrize(
         "path,expected",
         [
-            ("not-found.pyx", True),
-            ("dashboard/not-found.pyx", True),
-            ("error.pyx", False),
-            ("index.pyx", False),
+            ("not-found.pyxl", True),
+            ("dashboard/not-found.pyxl", True),
+            ("error.pyxl", False),
+            ("index.pyxl", False),
         ],
     )
     def test_is_not_found_page(self, path: str, expected: bool):
         assert is_not_found_page(path) == expected
 
     def test_case_insensitive(self):
-        assert is_error_boundary_file("Error.pyx")
-        assert is_error_boundary_file("NOT-FOUND.pyx")
-        assert is_error_boundary_file("ERROR.PYX")
+        assert is_error_boundary_file("Error.pyxl")
+        assert is_error_boundary_file("NOT-FOUND.pyxl")
+        assert is_error_boundary_file("ERROR.PYXL")
 
 
 # ---------------------------------------------------------------------------
@@ -96,50 +96,50 @@ class TestBuildErrorBoundaryRegistry:
         assert registry.not_found_pages == {}
 
     def test_root_error_page(self):
-        page = _stub_page("error.pyx", "/error")
+        page = _stub_page("error.pyxl", "/error")
         registry = build_error_boundary_registry([page])
         assert "." in registry.error_pages
         assert registry.error_pages["."] is page
 
     def test_root_not_found_page(self):
-        page = _stub_page("not-found.pyx", "/not-found")
+        page = _stub_page("not-found.pyxl", "/not-found")
         registry = build_error_boundary_registry([page])
         assert "." in registry.not_found_pages
         assert registry.not_found_pages["."] is page
 
     def test_nested_error_page(self):
-        page = _stub_page("dashboard/error.pyx", "/dashboard/error")
+        page = _stub_page("dashboard/error.pyxl", "/dashboard/error")
         registry = build_error_boundary_registry([page])
         assert "dashboard" in registry.error_pages
 
     def test_deeply_nested(self):
-        page = _stub_page("dashboard/settings/error.pyx", "/dashboard/settings/error")
+        page = _stub_page("dashboard/settings/error.pyxl", "/dashboard/settings/error")
         registry = build_error_boundary_registry([page])
         assert "dashboard/settings" in registry.error_pages
 
     def test_multiple_boundaries(self):
-        root_error = _stub_page("error.pyx", "/error")
-        dash_error = _stub_page("dashboard/error.pyx", "/dashboard/error")
-        root_nf = _stub_page("not-found.pyx", "/not-found")
+        root_error = _stub_page("error.pyxl", "/error")
+        dash_error = _stub_page("dashboard/error.pyxl", "/dashboard/error")
+        root_nf = _stub_page("not-found.pyxl", "/not-found")
         registry = build_error_boundary_registry([root_error, dash_error, root_nf])
         assert len(registry.error_pages) == 2
         assert len(registry.not_found_pages) == 1
 
     def test_non_boundary_pages_are_ignored(self):
-        index = _stub_page("index.pyx", "/")
-        about = _stub_page("about.pyx", "/about")
+        index = _stub_page("index.pyxl", "/")
+        about = _stub_page("about.pyxl", "/about")
         registry = build_error_boundary_registry([index, about])
         assert not registry.has_error_pages
         assert not registry.has_not_found_pages
 
     def test_has_error_pages_property(self):
-        page = _stub_page("error.pyx", "/error")
+        page = _stub_page("error.pyxl", "/error")
         registry = build_error_boundary_registry([page])
         assert registry.has_error_pages
         assert not registry.has_not_found_pages
 
     def test_has_not_found_pages_property(self):
-        page = _stub_page("not-found.pyx", "/not-found")
+        page = _stub_page("not-found.pyxl", "/not-found")
         registry = build_error_boundary_registry([page])
         assert not registry.has_error_pages
         assert registry.has_not_found_pages
@@ -155,16 +155,16 @@ class TestFindErrorBoundary:
         """Registry with root + dashboard error pages, root not-found."""
         return ErrorBoundaryRegistry(
             error_pages={
-                ".": _stub_page("error.pyx", "/error"),
-                "dashboard": _stub_page("dashboard/error.pyx", "/dashboard/error"),
+                ".": _stub_page("error.pyxl", "/error"),
+                "dashboard": _stub_page("dashboard/error.pyxl", "/dashboard/error"),
                 "dashboard/settings": _stub_page(
-                    "dashboard/settings/error.pyx",
+                    "dashboard/settings/error.pyxl",
                     "/dashboard/settings/error",
                 ),
             },
             not_found_pages={
-                ".": _stub_page("not-found.pyx", "/not-found"),
-                "dashboard": _stub_page("dashboard/not-found.pyx", "/dashboard/not-found"),
+                ".": _stub_page("not-found.pyxl", "/not-found"),
+                "dashboard": _stub_page("dashboard/not-found.pyxl", "/dashboard/not-found"),
             },
         )
 
@@ -174,37 +174,37 @@ class TestFindErrorBoundary:
         reg = self._registry()
         result = reg.find_error_boundary("/")
         assert result is not None
-        assert result.source_relative_path == Path("error.pyx")
+        assert result.source_relative_path == Path("error.pyxl")
 
     def test_dashboard_route_finds_dashboard_error(self):
         reg = self._registry()
         result = reg.find_error_boundary("/dashboard")
         assert result is not None
-        assert result.source_relative_path == Path("dashboard/error.pyx")
+        assert result.source_relative_path == Path("dashboard/error.pyxl")
 
     def test_dashboard_child_finds_dashboard_error(self):
         reg = self._registry()
         result = reg.find_error_boundary("/dashboard/users")
         assert result is not None
-        assert result.source_relative_path == Path("dashboard/error.pyx")
+        assert result.source_relative_path == Path("dashboard/error.pyxl")
 
     def test_dashboard_settings_finds_settings_error(self):
         reg = self._registry()
         result = reg.find_error_boundary("/dashboard/settings")
         assert result is not None
-        assert result.source_relative_path == Path("dashboard/settings/error.pyx")
+        assert result.source_relative_path == Path("dashboard/settings/error.pyxl")
 
     def test_dashboard_settings_child_finds_settings_error(self):
         reg = self._registry()
         result = reg.find_error_boundary("/dashboard/settings/profile")
         assert result is not None
-        assert result.source_relative_path == Path("dashboard/settings/error.pyx")
+        assert result.source_relative_path == Path("dashboard/settings/error.pyxl")
 
     def test_unrelated_route_falls_back_to_root(self):
         reg = self._registry()
         result = reg.find_error_boundary("/about")
         assert result is not None
-        assert result.source_relative_path == Path("error.pyx")
+        assert result.source_relative_path == Path("error.pyxl")
 
     def test_no_boundary_returns_none(self):
         empty = ErrorBoundaryRegistry(error_pages={}, not_found_pages={})
@@ -216,19 +216,19 @@ class TestFindErrorBoundary:
         reg = self._registry()
         result = reg.find_not_found_boundary("/")
         assert result is not None
-        assert result.source_relative_path == Path("not-found.pyx")
+        assert result.source_relative_path == Path("not-found.pyxl")
 
     def test_dashboard_route_finds_dashboard_not_found(self):
         reg = self._registry()
         result = reg.find_not_found_boundary("/dashboard/unknown")
         assert result is not None
-        assert result.source_relative_path == Path("dashboard/not-found.pyx")
+        assert result.source_relative_path == Path("dashboard/not-found.pyxl")
 
     def test_unrelated_route_finds_root_not_found(self):
         reg = self._registry()
         result = reg.find_not_found_boundary("/blog/missing")
         assert result is not None
-        assert result.source_relative_path == Path("not-found.pyx")
+        assert result.source_relative_path == Path("not-found.pyxl")
 
     def test_no_not_found_returns_none(self):
         empty = ErrorBoundaryRegistry(error_pages={}, not_found_pages={})
@@ -240,20 +240,20 @@ class TestFindErrorBoundary:
         reg = self._registry()
         result = reg.find_error_boundary("/dashboard/")
         assert result is not None
-        assert result.source_relative_path == Path("dashboard/error.pyx")
+        assert result.source_relative_path == Path("dashboard/error.pyxl")
 
     def test_empty_path_treated_as_root(self):
         reg = self._registry()
         result = reg.find_error_boundary("")
         assert result is not None
-        assert result.source_relative_path == Path("error.pyx")
+        assert result.source_relative_path == Path("error.pyxl")
 
     def test_only_deepest_match_wins(self):
         """When multiple error boundaries exist, the closest one wins."""
         reg = self._registry()
-        # /dashboard/settings/profile -> dashboard/settings/error.pyx
+        # /dashboard/settings/profile -> dashboard/settings/error.pyxl
         result = reg.find_error_boundary("/dashboard/settings/profile")
-        assert result.source_relative_path == Path("dashboard/settings/error.pyx")
-        # /dashboard/users -> dashboard/error.pyx (not root)
+        assert result.source_relative_path == Path("dashboard/settings/error.pyxl")
+        # /dashboard/users -> dashboard/error.pyxl (not root)
         result = reg.find_error_boundary("/dashboard/users")
-        assert result.source_relative_path == Path("dashboard/error.pyx")
+        assert result.source_relative_path == Path("dashboard/error.pyxl")

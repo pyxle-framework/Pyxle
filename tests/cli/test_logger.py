@@ -126,7 +126,7 @@ def test_diagnostic_error_with_location():
     logger = ConsoleLogger(secho=capture)
     logger.diagnostic(
         "variable 'x' is not defined",
-        file="pages/index.pyx",
+        file="pages/index.pyxl",
         line=10,
         column=5,
         severity="error",
@@ -135,7 +135,7 @@ def test_diagnostic_error_with_location():
     assert len(captured) == 2
     assert "error:" in captured[0]
     assert "variable 'x' is not defined" in captured[0]
-    assert "--> pages/index.pyx:10:5" in captured[1]
+    assert "--> pages/index.pyxl:10:5" in captured[1]
 
 
 def test_diagnostic_warning_without_location():
@@ -163,14 +163,14 @@ def test_diagnostic_with_hint():
     logger = ConsoleLogger(secho=capture)
     logger.diagnostic(
         "async function required",
-        file="pages/index.pyx",
+        file="pages/index.pyxl",
         line=5,
         hint="Add 'async' keyword to the function definition",
     )
 
     assert len(captured) == 3
     assert "error:" in captured[0]
-    assert "--> pages/index.pyx:5" in captured[1]
+    assert "--> pages/index.pyxl:5" in captured[1]
     assert "hint:" in captured[2]
     assert "async" in captured[2]
 

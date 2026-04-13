@@ -18,7 +18,7 @@
 ---
 
 ```python
-# pages/index.pyx
+# pages/index.pyxl
 
 @server
 async def load(request):
@@ -30,7 +30,7 @@ export default function Home({ data }) {
 }
 ```
 
-Pyxle compiles `.pyx` files into Python server modules and React client components.
+Pyxle compiles `.pyxl` files into Python server modules and React client components.
 `@server` loaders run on the backend, SSR renders the HTML, React hydrates on the client.
 
 ## Get started
@@ -46,8 +46,8 @@ Open **http://localhost:8000**.
 
 ## Features
 
-**`.pyx` files** -- Python + React in a single file, split at compile time
-**File-based routing** -- `pages/` maps to URLs, dynamic segments with `[param].pyx`
+**`.pyxl` files** -- Python + React in a single file, split at compile time
+**File-based routing** -- `pages/` maps to URLs, dynamic segments with `[param].pyxl`
 **SSR** -- Server-side rendering via esbuild + React 18
 **`@server` / `@action`** -- Typed data loading and form mutations
 **Layouts** -- Nested layouts and templates with slot composition
@@ -61,7 +61,7 @@ Full docs at [pyxle.dev/docs](https://pyxle.dev/docs/getting-started/installatio
 
 - [Installation](https://pyxle.dev/docs/getting-started/installation)
 - [Quick Start](https://pyxle.dev/docs/getting-started/quick-start)
-- [`.pyx` Files](https://pyxle.dev/docs/core-concepts/pyx-files)
+- [`.pyxl` Files](https://pyxle.dev/docs/core-concepts/pyxl-files)
 - [Routing](https://pyxle.dev/docs/core-concepts/routing)
 - [Data Loading](https://pyxle.dev/docs/core-concepts/data-loading)
 - [Server Actions](https://pyxle.dev/docs/core-concepts/server-actions)

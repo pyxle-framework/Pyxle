@@ -297,7 +297,7 @@ async def build_not_found_response(
     error_boundaries: ErrorBoundaryRegistry | None = None,
     overlay: OverlayManager | None = None,
 ) -> Optional[Response]:
-    """Render the nearest ``not-found.pyx`` for the requested path.
+    """Render the nearest ``not-found.pyxl`` for the requested path.
 
     Returns ``None`` if no not-found boundary exists (caller should fall back
     to the default 404 response).
@@ -492,7 +492,7 @@ async def _try_error_boundary(
     error: BaseException,
     status_code: int,
 ) -> Optional[Response]:
-    """Attempt to render the nearest ``error.pyx`` for *route_path*.
+    """Attempt to render the nearest ``error.pyxl`` for *route_path*.
 
     Returns an :class:`HTMLResponse` if an error boundary was found and
     rendered successfully, or ``None`` if no boundary exists or the boundary
@@ -532,7 +532,7 @@ async def _try_error_boundary(
 
 
 def _build_error_context(error: BaseException, status_code: int) -> dict[str, Any]:
-    """Build the error context dict passed as component props to error.pyx."""
+    """Build the error context dict passed as component props to error.pyxl."""
     from pyxle.runtime import ActionError, LoaderError
 
     context: dict[str, Any] = {

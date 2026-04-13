@@ -47,7 +47,7 @@ npm install --save-dev autoprefixer postcss
 ```
 
 **3. Import your stylesheet from a JSX module.** The cleanest place is the
-root `pages/layout.pyx` so every route picks it up via the layout wrapper:
+root `pages/layout.pyxl` so every route picks it up via the layout wrapper:
 
 ```jsx
 import './styles/tailwind.css';
@@ -117,7 +117,7 @@ control which files Tailwind scans for class names:
 
 ```javascript
 module.exports = {
-  content: ['./pages/**/*.{pyx,jsx,js,tsx,ts}'],
+  content: ['./pages/**/*.{pyxl,jsx,js,tsx,ts}'],
   darkMode: 'class',
   theme: {
     extend: {},

@@ -6,7 +6,7 @@ compiler turns that result into **three files on disk** that the dev
 server, the SSR pipeline, and the Vite bundler all consume:
 
 ```
-pages/index.pyx                    ← your source
+pages/index.pyxl                    ← your source
    │
    │  PyxParser().parse()
    ▼
@@ -27,7 +27,7 @@ the compiler applies along the way.
 - `compiler/core.py` (~70 lines) — top-level `compile_file()` entry
 - `compiler/writers.py` (~310 lines) — `ArtifactWriter` and the
   runtime-import injection helpers
-- `compiler/jsx_imports.py` (~370 lines) — the `.pyx → .jsx` import
+- `compiler/jsx_imports.py` (~370 lines) — the `.pyxl → .jsx` import
   rewriter
 - `compiler/jsx_parser.py` (~125 lines) — Babel subprocess wrapper
 - `compiler/model.py` (~130 lines) — `CompilationResult`,
@@ -72,10 +72,10 @@ parser and the writer.
 module** for one route. It's what `pyxle dev` and `pyxle serve`
 actually `import` and call.
 
-Here's a real example. Source `.pyx`:
+Here's a real example. Source `.pyxl`:
 
 ```python
-# pages/index.pyx
+# pages/index.pyxl
 import time
 
 @server
@@ -141,7 +141,7 @@ startup to build its routing table without re-parsing the source:
 
 ```json
 {
-  "source_relative_path": "index.pyx",
+  "source_relative_path": "index.pyxl",
   "route_path": "/",
   "alternate_route_paths": [],
   "loader_name": "load_home",
@@ -161,7 +161,7 @@ startup to build its routing table without re-parsing the source:
 
 The dev server's `MetadataRegistry` (`devserver/registry.py`) loads
 all of these at startup, builds a `RouteTable`, and uses it to
-dispatch requests. No `.pyx` file is parsed during a request — that
+dispatch requests. No `.pyxl` file is parsed during a request — that
 work is done once, at compile time.
 
 ---
@@ -253,17 +253,17 @@ in `compiler/writers.py:139-215`.
 JSX files import each other. A page might import a shared component:
 
 ```jsx
-// pages/index.pyx
-import Sidebar from './Sidebar.pyx';
+// pages/index.pyxl
+import Sidebar from './Sidebar.pyxl';
 
 export default function Home() {
     return <Sidebar />;
 }
 ```
 
-But after compilation, `Sidebar.pyx` doesn't exist on disk anymore —
+But after compilation, `Sidebar.pyxl` doesn't exist on disk anymore —
 its compiled version is `Sidebar.jsx`. The bundler can't resolve
-`./Sidebar.pyx` because there's nothing there. We need to rewrite
+`./Sidebar.pyxl` because there's nothing there. We need to rewrite
 the import specifier so it points at the compiled artifact:
 
 ```jsx
@@ -283,7 +283,7 @@ character-by-character JS lexer that walks the JSX source tracking:
 When the lexer sees a string literal *in import-specifier position*
 (which can be `import x from "..."`, `import "..."`, `export ...
 from "..."`, `import("...")`, etc.), it checks if the specifier
-ends with `.pyx` (with optional `?query` and `#fragment` suffixes
+ends with `.pyxl` (with optional `?query` and `#fragment` suffixes
 preserved) and rewrites the extension to `.jsx`.
 
 It is **not** a complete JS parser — it only tracks enough state to
@@ -300,12 +300,12 @@ most cases but break on:
 
 - Strings that contain the word "import" (`const msg = "import was
   removed"`)
-- Comments that contain import statements (`// import './foo.pyx'`)
+- Comments that contain import statements (`// import './foo.pyxl'`)
 - Template literals containing import statements
 - Dynamic imports with concatenated paths (`import("./" + name +
-  ".pyx")` — we *don't* rewrite these because we don't know the
+  ".pyxl")` — we *don't* rewrite these because we don't know the
   literal value)
-- Re-exports (`export { foo } from "./bar.pyx"`)
+- Re-exports (`export { foo } from "./bar.pyxl"`)
 
 The lexer handles all of these correctly because it tracks state.
 Regexes don't track state.
@@ -357,10 +357,10 @@ warning but doesn't fail.
 ## The data flow, end to end
 
 Putting it all together, here's what happens when the compiler
-processes one `.pyx` file:
+processes one `.pyxl` file:
 
 ```
-pages/index.pyx
+pages/index.pyxl
    │
    │ 1. PyxParser().parse(source_path)
    ▼
@@ -377,7 +377,7 @@ PyxParseResult
    │
    │ 2. ArtifactWriter().write(...)
    │    a. ensure_*_import(python_code)         ← inject runtime decorators
-   │    b. rewrite_pyx_import_specifiers(jsx)   ← .pyx → .jsx in imports
+   │    b. rewrite_pyxl_import_specifiers(jsx)  ← .pyxl → .jsx in imports
    │    c. PageMetadata(...).to_json()          ← serialize the metadata
    ▼
 .pyxle-build/server/pages/index.py
@@ -387,7 +387,7 @@ PyxParseResult
 
 Source: `compiler/core.py` + `compiler/writers.py:28-136`.
 
-Every `.pyx` file produces exactly three artifacts. There's no
+Every `.pyxl` file produces exactly three artifacts. There's no
 in-memory state shared between compilation of different files —
 each `compile_file()` call is independent and reentrant. This is
 what makes incremental compilation possible: when the file watcher
@@ -487,12 +487,12 @@ Three reasons:
    valid Python and never will be.
 
 2. **Vite expects `.jsx` files for client-side bundling.** Vite has
-   no idea what a `.pyx` file is. Giving it actual JSX files lets us
+   no idea what a `.pyxl` file is. Giving it actual JSX files lets us
    take advantage of Vite's existing toolchain (esbuild, Vue plugin,
    React Refresh, HMR) without modifying Vite at all.
 
 3. **Metadata is read more often than it's written.** A typical
-   project has 20-100 `.pyx` files but the dev server reads the
+   project has 20-100 `.pyxl` files but the dev server reads the
    metadata for every request. Keeping it as parsed JSON instead of
    re-parsing source files on each request is a major performance
    win.
@@ -501,7 +501,7 @@ Three reasons:
 
 ## Where to read next
 
-- **[Routing](routing.md)** — How `.pyx` file paths get translated
+- **[Routing](routing.md)** — How `.pyxl` file paths get translated
   into URL routes, including dynamic segments, catch-all routes, and
   index collapsing.
 

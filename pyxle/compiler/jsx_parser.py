@@ -45,17 +45,12 @@ def parse_jsx_components(jsx_code: str, *, target_components: set[str] | None = 
     if not jsx_code.strip():
         return JSXParseResult(components=(), error=None)
 
-    # Create temporary file for Node.js parser
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".jsx", delete=False, encoding="utf-8") as temp_file:
-        temp_file.write(jsx_code)
-        temp_file.flush()
-        temp_path = temp_file.name
-
-    try:
-        result = _run_babel_parser(temp_path, target_components)
-        return result
-    finally:
-        Path(temp_path).unlink(missing_ok=True)
+    # Use TemporaryDirectory for automatic cleanup and better isolation
+    # on shared systems (avoids predictable temp file paths).
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir) / "input.jsx"
+        temp_path.write_text(jsx_code, encoding="utf-8")
+        return _run_babel_parser(str(temp_path), target_components)
 
 
 def _run_babel_parser(source_path: str, target_components: set[str] | None) -> JSXParseResult:

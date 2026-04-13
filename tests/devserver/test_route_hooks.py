@@ -68,8 +68,8 @@ def test_wrap_with_route_hooks_runs_chain_in_order():
     context = RouteContext(
         target="page",
         path="/",
-        source_relative_path=Path("index.pyx"),
-        source_absolute_path=Path("/tmp/index.pyx"),
+        source_relative_path=Path("index.pyxl"),
+        source_absolute_path=Path("/tmp/index.pyxl"),
         module_key="pyxle.server.pages.index",
         content_hash="abc",
     )
@@ -96,8 +96,8 @@ def test_load_route_hooks_supports_lifecycle_classes():
     context = RouteContext(
         target="page",
         path="/",
-        source_relative_path=Path("index.pyx"),
-        source_absolute_path=Path("/tmp/index.pyx"),
+        source_relative_path=Path("index.pyxl"),
+        source_absolute_path=Path("/tmp/index.pyxl"),
         module_key="pyxle.server.pages.index",
         content_hash="abc",
     )

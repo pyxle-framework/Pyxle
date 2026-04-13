@@ -9,8 +9,8 @@ my-app/
       pulse.py            # Example API route
     styles/
       tailwind.css        # Tailwind CSS input file
-    index.pyx             # Home page (Python + React)
-    layout.pyx            # Root layout wrapper (React only)
+    index.pyxl             # Home page (Python + React)
+    layout.pyxl            # Root layout wrapper (React only)
   public/
     branding/             # SVG logos and assets
     styles/
@@ -28,15 +28,15 @@ my-app/
 
 ### `pages/`
 
-The pages directory is the heart of your app. Every `.pyx` file here becomes a route, and every `.py` file under `pages/api/` becomes an API endpoint.
+The pages directory is the heart of your app. Every `.pyxl` file here becomes a route, and every `.py` file under `pages/api/` becomes an API endpoint.
 
 ```
 pages/
-  index.pyx        -->  /
-  about.pyx        -->  /about
+  index.pyxl        -->  /
+  about.pyxl        -->  /about
   blog/
-    index.pyx      -->  /blog
-    [slug].pyx     -->  /blog/:slug
+    index.pyxl      -->  /blog
+    [slug].pyxl     -->  /blog/:slug
   api/
     pulse.py       -->  /api/pulse
     users.py       -->  /api/users
@@ -65,9 +65,9 @@ Created automatically when you run `pyxle dev` or `pyxle build`. Contains compil
 
 ## Key files
 
-### `pages/index.pyx`
+### `pages/index.pyxl`
 
-A `.pyx` file combines Python server logic with a React component. The scaffold's index page demonstrates:
+A `.pyxl` file combines Python server logic with a React component. The scaffold's index page demonstrates:
 
 - `@server` decorator for data loading
 - React JSX for the UI
@@ -98,7 +98,7 @@ export default function HomePage({ data }) {
 }
 ```
 
-### `pages/layout.pyx`
+### `pages/layout.pyxl`
 
 The root layout wraps every page. It is JSX-only (no Python section needed):
 
@@ -153,7 +153,7 @@ Tailwind CSS configuration. The scaffold configures it to scan your `pages/` dir
 
 ```javascript
 module.exports = {
-  content: ['./pages/**/*.{pyx,jsx,js,tsx,ts}'],
+  content: ['./pages/**/*.{pyxl,jsx,js,tsx,ts}'],
   darkMode: 'class',
   // ...
 };
@@ -161,5 +161,5 @@ module.exports = {
 
 ## Next steps
 
-- Learn how `.pyx` files work: [`.pyx` Files](../core-concepts/pyx-files.md)
+- Learn how `.pyxl` files work: [`.pyxl` Files](../core-concepts/pyxl-files.md)
 - Understand routing: [Routing](../core-concepts/routing.md)

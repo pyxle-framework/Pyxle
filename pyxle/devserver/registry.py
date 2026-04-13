@@ -155,7 +155,7 @@ def _build_page_entry(
     content_hash: str,
 ) -> Optional[PageRegistryEntry]:
     filename = relative_path.name.lower()
-    if filename in {"layout.pyx", "template.pyx"}:
+    if filename in {"layout.pyxl", "template.pyxl"}:
         return None
 
     metadata_path = settings.metadata_build_dir / "pages" / relative_path.with_suffix(".json")
@@ -340,7 +340,7 @@ def find_layout_head_jsx_blocks(
 ) -> tuple[str, ...]:
     """Find and load head blocks from layout/template files that wrap the page.
     
-    Searches ancestor directories from the page's location for layout.pyx and template.pyx
+    Searches ancestor directories from the page's location for layout.pyxl and template.pyxl
     files, loading their compiled metadata to extract both head_jsx_blocks (from <Head>)
     and head_elements (from legacy HEAD variables). Returns the combined blocks in 
     directory precedence order (closest ancestor first).
@@ -364,7 +364,7 @@ def find_layout_head_jsx_blocks(
     
     # Search for layout and template files in ancestor directories
     for ancestor_dir in ancestors:
-        for filename in ("layout.pyx", "template.pyx"):
+        for filename in ("layout.pyxl", "template.pyxl"):
             metadata_path = settings.metadata_build_dir / "pages" / ancestor_dir / Path(filename).with_suffix(".json")
             # Handle root directory case
             if ancestor_dir == Path("."):

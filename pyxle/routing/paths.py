@@ -26,7 +26,7 @@ def route_path_variants_from_relative(relative_path: Path) -> RoutePathSpec:
 
     The first entry represents the canonical path; any additional entries are
     alias paths that should resolve to the same handler (for example optional
-    catch-all routes derived from ``[[...slug]].pyx`` files).
+    catch-all routes derived from ``[[...slug]].pyxl`` files).
     """
 
     parts = list(relative_path.parts)

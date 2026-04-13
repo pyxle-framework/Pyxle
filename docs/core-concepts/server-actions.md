@@ -4,7 +4,7 @@ Server actions let your React components call Python functions on the server. Th
 
 ## Defining an action
 
-Use the `@action` decorator on an async function in your `.pyx` file:
+Use the `@action` decorator on an async function in your `.pyxl` file:
 
 ```python
 @action
@@ -23,7 +23,7 @@ The function:
 - Must return a JSON-serializable `dict`
 - Can only be called via `POST` request
 
-Multiple actions can exist in the same `.pyx` file alongside a `@server` loader.
+Multiple actions can exist in the same `.pyxl` file alongside a `@server` loader.
 
 ## Calling actions from React
 
@@ -143,7 +143,7 @@ Each `@action` function gets an automatic endpoint:
 POST /api/__actions/{page_path}/{action_name}
 ```
 
-For example, `create_post` in `pages/blog/new.pyx` is available at:
+For example, `create_post` in `pages/blog/new.pyxl` is available at:
 
 ```
 POST /api/__actions/blog/new/create_post

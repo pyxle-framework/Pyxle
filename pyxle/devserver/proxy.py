@@ -72,17 +72,30 @@ class ViteProxy:
 
     async def handle(self, request: Request) -> Response:
         """Forward the given request to Vite and stream the response back."""
+        import posixpath
 
         if not self.should_proxy(request):
             return await self._fallback_response(request)
 
-        headers = self._prepare_request_headers(request)
+        # Normalise the path to prevent directory-traversal attacks that
+        # could reach Vite's @fs endpoint or other sensitive paths.
+        raw_path = request.url.path
+        normalised = posixpath.normpath(raw_path)
+        if not normalised.startswith("/"):
+            normalised = "/" + normalised
+        if ".." in normalised.split("/"):
+            return PlainTextResponse("Invalid path", status_code=400)
+
+        headers = self._prepare_request_headers(
+            request,
+            upstream_host=f"{self._settings.vite_host}:{self._settings.vite_port}",
+        )
         body = await request.body()
         params: Iterable[tuple[str, str]] = list(request.query_params.multi_items())
 
         stream_cm = self._client.stream(
                 request.method,
-                f"http://{self._settings.vite_host}:{self._settings.vite_port}{request.url.path}",
+                f"http://{self._settings.vite_host}:{self._settings.vite_port}{normalised}",
                 params=params,
                 headers=headers,
                 content=body if body else None,
@@ -136,12 +149,18 @@ class ViteProxy:
         )
 
     @staticmethod
-    def _prepare_request_headers(request: Request) -> dict[str, str]:
+    def _prepare_request_headers(
+        request: Request, *, upstream_host: str = ""
+    ) -> dict[str, str]:
         headers: dict[str, str] = {}
         for key, value in request.headers.items():
             if key.lower() in _SKIP_REQUEST_HEADERS:
                 continue
             headers[key] = value
+        # Set the correct Host header for the upstream Vite server so that
+        # Vite plugins that inspect Host get a trustworthy value.
+        if upstream_host:
+            headers["host"] = upstream_host
         return headers
 
     @staticmethod

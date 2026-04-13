@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -121,19 +120,24 @@ class _NodeComponentRuntime:
             str(self._project_root),
         ]
 
-        env = os.environ.copy()
-        node_path = str(self._project_root / "node_modules")
-        existing_path = env.get("NODE_PATH")
-        env["NODE_PATH"] = node_path if not existing_path else os.pathsep.join([node_path, existing_path])
+        from pyxle.ssr.worker_pool import _build_node_env
 
-        process = subprocess.run(  # noqa: S603 - controlled command invocation
-            command,
-            cwd=str(self._project_root),
-            capture_output=True,
-            text=True,
-            check=False,
-            env=env,
-        )
+        env = _build_node_env(self._project_root)
+
+        try:
+            process = subprocess.run(  # noqa: S603 - controlled command invocation
+                command,
+                cwd=str(self._project_root),
+                capture_output=True,
+                text=True,
+                check=False,
+                env=env,
+                timeout=30,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise ComponentRenderError(
+                f"SSR render timed out after 30s for '{self._component_path.name}'"
+            ) from exc
 
         if process.returncode not in (0, None):
             raise ComponentRenderError(_format_node_error(process))

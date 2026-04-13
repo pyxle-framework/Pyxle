@@ -30,6 +30,14 @@ def _load_single_middleware(spec: str) -> Middleware:
             "Middleware specifications must be of the form 'module:attribute'."
         )
 
+    from pyxle.devserver._security import validate_python_module_path
+
+    if not validate_python_module_path(module_name):
+        raise MiddlewareHookError(
+            f"Invalid module path '{module_name}'. "
+            "Must be a valid dotted Python import path."
+        )
+
     try:
         module = importlib.import_module(module_name)
     except ImportError as exc:  # pragma: no cover - surfaced via tests

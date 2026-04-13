@@ -407,10 +407,23 @@ def _build_public_env_defines() -> str:
     """Build a Vite ``define`` block injecting ``PYXLE_PUBLIC_*`` env vars.
 
     Each variable is exposed as ``import.meta.env.PYXLE_PUBLIC_*`` in client code.
+
+    .. note::
+
+        Environment variables are snapshot at dev-server startup.
+        Rotating a ``PYXLE_PUBLIC_*`` variable at runtime requires a
+        server restart for the change to appear in client bundles.
+    Keys are validated against :data:`SAFE_IDENTIFIER_RE` to prevent code
+    injection via malformed environment variable names.
     """
 
     import json  # noqa: PLC0415
+    import logging  # noqa: PLC0415
     import os  # noqa: PLC0415
+
+    from pyxle.devserver._security import SAFE_IDENTIFIER_RE
+
+    _logger = logging.getLogger(__name__)
 
     prefix = "PYXLE_PUBLIC_"
     public_vars = {k: v for k, v in sorted(os.environ.items()) if k.startswith(prefix)}
@@ -419,7 +432,13 @@ def _build_public_env_defines() -> str:
 
     entries: list[str] = []
     for key, value in public_vars.items():
+        if not SAFE_IDENTIFIER_RE.match(key):
+            _logger.warning("Skipping PYXLE_PUBLIC_ key with invalid name: %r", key)
+            continue
         entries.append(f"    'import.meta.env.{key}': {json.dumps(value)}")
+
+    if not entries:
+        return ""
 
     define_content = ",\n".join(entries)
     return f"\n  define: {{\n{define_content},\n  }},"

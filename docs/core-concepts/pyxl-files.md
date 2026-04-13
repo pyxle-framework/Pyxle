@@ -1,10 +1,10 @@
-# `.pyx` Files
+# `.pyxl` Files
 
-A `.pyx` file is the fundamental building block of a Pyxle application. It combines Python server logic with a React component in a single file -- your data fetching and your UI live together.
+A `.pyxl` file is the fundamental building block of a Pyxle application. It combines Python server logic with a React component in a single file -- your data fetching and your UI live together.
 
-## Anatomy of a `.pyx` file
+## Anatomy of a `.pyxl` file
 
-A `.pyx` file has two sections:
+A `.pyxl` file has two sections:
 
 ```python
 # 1. Python section -- runs on the server
@@ -189,7 +189,7 @@ export default function HomePage({ data }) {
 
 ## JSX-only files
 
-If a page has no server logic, you can write a JSX-only `.pyx` file:
+If a page has no server logic, you can write a JSX-only `.pyxl` file:
 
 ```jsx
 export default function AboutPage() {

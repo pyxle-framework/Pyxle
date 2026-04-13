@@ -10,7 +10,7 @@ pyxle build
 
 This:
 
-1. Compiles all `.pyx` files into Python and JSX modules
+1. Compiles all `.pyxl` files into Python and JSX modules
 2. Runs `npm run build` (which runs `build:css` for Tailwind, then Vite bundling)
 3. Outputs production artifacts to the `dist/` directory
 

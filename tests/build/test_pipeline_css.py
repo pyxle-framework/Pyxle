@@ -37,8 +37,8 @@ def _make_page(route_path: str, *, project: Path) -> PageRegistryEntry:
     return PageRegistryEntry(
         route_path=route_path,
         alternate_route_paths=(),
-        source_relative_path=Path("pages/index.pyx"),
-        source_absolute_path=project / "pages" / "index.pyx",
+        source_relative_path=Path("pages/index.pyxl"),
+        source_absolute_path=project / "pages" / "index.pyxl",
         server_module_path=project / ".pyxle-build" / "server" / "pages" / "index.py",
         client_module_path=project / ".pyxle-build" / "client" / "pages" / "index.jsx",
         metadata_path=project / ".pyxle-build" / "metadata" / "pages" / "index.json",
@@ -162,7 +162,7 @@ def test_build_page_manifest_walks_imports_chain_for_layout_css(tmp_path: Path) 
     chain so the page still gets the CSS link in production HTML.
 
     This is the real-world case that pyxle-dev hit: one
-    ``import './styles/tailwind.css';`` in ``pages/layout.pyx`` produces a
+    ``import './styles/tailwind.css';`` in ``pages/layout.pyxl`` produces a
     single hashed bundle referenced from the layout chunk; every page
     imports the layout chunk but has its own empty ``css`` array. Without
     transitive collection, production renders with zero ``<link>`` tags
@@ -294,8 +294,8 @@ def test_build_page_manifest_propagates_css_to_aliased_routes(tmp_path: Path) ->
     page = PageRegistryEntry(
         route_path="/docs/{slug}",
         alternate_route_paths=("/docs", "/docs/"),
-        source_relative_path=Path("pages/docs/[[...slug]].pyx"),
-        source_absolute_path=project / "pages" / "docs" / "[[...slug]].pyx",
+        source_relative_path=Path("pages/docs/[[...slug]].pyxl"),
+        source_absolute_path=project / "pages" / "docs" / "[[...slug]].pyxl",
         server_module_path=project / ".pyxle-build" / "server" / "pages" / "docs.py",
         client_module_path=project / ".pyxle-build" / "client" / "pages" / "docs.jsx",
         metadata_path=project / ".pyxle-build" / "metadata" / "pages" / "docs.json",

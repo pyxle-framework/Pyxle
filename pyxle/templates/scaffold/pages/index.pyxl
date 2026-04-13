@@ -48,7 +48,7 @@ export default function HomePage({ data }) {
 
                 <div className="mt-8 rounded-lg border border-slate-200 bg-white p-4 text-left font-mono text-sm text-slate-700">
                     <p className="text-slate-400">{"// Get started by editing"}</p>
-                    <p className="mt-1 text-emerald-600">pages/index.pyx</p>
+                    <p className="mt-1 text-emerald-600">pages/index.pyxl</p>
                 </div>
 
                 <nav className="mt-8 flex flex-wrap justify-center gap-6 text-sm">

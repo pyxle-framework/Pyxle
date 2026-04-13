@@ -6,6 +6,17 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 
+/**
+ * Verify that a resolved path stays within the given boundary directory.
+ *
+ * Returns `true` when the resolved path is equal to or nested inside the
+ * boundary.  Prevents path-traversal attacks via imports like
+ * `/pages/../../../../etc/passwd`.
+ */
+function isPathWithinBoundary(resolved, boundary) {
+  return resolved === boundary || resolved.startsWith(boundary + path.sep);
+}
+
 const REACT_EXTERNALS = [
   'react',
   'react-dom',
@@ -87,18 +98,24 @@ async function render() {
         {
           name: 'pyxle-pages-alias',
           setup(build) {
-            build.onResolve({ filter: /^\/(pages|routes)\// }, (args) => ({
-              path: path.resolve(workingDir, args.path.slice(1)),
-            }));
+            build.onResolve({ filter: /^\/(pages|routes)\// }, (args) => {
+              const resolved = path.resolve(workingDir, args.path.slice(1));
+              if (!isPathWithinBoundary(resolved, workingDir)) {
+                return { errors: [{ text: `Import path resolves outside the project: ${args.path}` }] };
+              }
+              return { path: resolved };
+            });
 
             build.onResolve({ filter: /^pyxle\/client(?:\/.*)?$/ }, (args) => {
               const remainder = args.path.slice('pyxle/client'.length);
               const normalized = remainder === '' || remainder === '/'
                 ? 'pyxle/client.js'
                 : `pyxle${remainder}`;
-              return {
-                path: path.resolve(workingDir, normalized),
-              };
+              const resolved = path.resolve(workingDir, normalized);
+              if (!isPathWithinBoundary(resolved, workingDir)) {
+                return { errors: [{ text: `Import path resolves outside the project: ${args.path}` }] };
+              }
+              return { path: resolved };
             });
           },
         },

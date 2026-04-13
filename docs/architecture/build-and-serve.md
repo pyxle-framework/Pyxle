@@ -38,7 +38,7 @@ The CLI commands themselves live in `pyxle/cli/__init__.py`:
 When you run `pyxle build`, the pipeline executes six steps in order:
 
 ```
-1. Compile every .pyx file to artifacts in .pyxle-build/
+1. Compile every .pyxl file to artifacts in .pyxle-build/
    (same as `pyxle dev`'s initial build)
    │
    ▼
@@ -221,7 +221,7 @@ metadata registry, looks up each page's bundled assets in the Vite
 manifest, walks the import chain to collect CSS, and emits one entry
 per route.
 
-Aliases (from `[[...slug]].pyx` optional catch-alls) get their own
+Aliases (from `[[...slug]].pyxl` optional catch-alls) get their own
 entry pointing at the same data:
 
 ```json

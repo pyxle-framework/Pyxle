@@ -1,6 +1,6 @@
 # Routing
 
-Pyxle uses **file-based routing**: the path of a `.pyx` file inside
+Pyxle uses **file-based routing**: the path of a `.pyxl` file inside
 your `pages/` directory *is* its URL. There is no `@app.route("/")`
 decorator. There is no router config file. There is no list of routes
 maintained by hand. The directory structure is the routing table.
@@ -26,15 +26,15 @@ The simplest case is one file per URL:
 
 ```
 pages/
-├── index.pyx                    →  /
-├── about.pyx                    →  /about
-└── contact.pyx                  →  /contact
+├── index.pyxl                    →  /
+├── about.pyxl                    →  /about
+└── contact.pyxl                  →  /contact
 ```
 
 Three rules turn the file path into the URL:
 
-1. **Strip the `.pyx` extension.**
-2. **Drop `index` segments** — `index.pyx` collapses to its parent.
+1. **Strip the `.pyxl` extension.**
+2. **Drop `index` segments** — `index.pyxl` collapses to its parent.
 3. **Prefix with `/`** — every route starts at the root.
 
 A nested directory becomes a path segment:
@@ -42,12 +42,12 @@ A nested directory becomes a path segment:
 ```
 pages/
 ├── posts/
-│   ├── index.pyx                →  /posts
-│   ├── popular.pyx              →  /posts/popular
+│   ├── index.pyxl                →  /posts
+│   ├── popular.pyxl              →  /posts/popular
 │   └── archive/
-│       └── 2025.pyx             →  /posts/archive/2025
+│       └── 2025.pyxl             →  /posts/archive/2025
 └── settings/
-    └── index.pyx                →  /settings
+    └── index.pyxl                →  /settings
 ```
 
 That's the entire convention for static routes. There's nothing
@@ -69,7 +69,7 @@ bracket** syntax in filenames to declare them:
 ```
 pages/
 └── posts/
-    └── [id].pyx                 →  /posts/{id}
+    └── [id].pyxl                 →  /posts/{id}
 ```
 
 The brackets become a Starlette path parameter. Inside the loader,
@@ -87,9 +87,9 @@ The parameter name is whatever you put inside the brackets:
 
 ```
 pages/
-├── users/[username].pyx         →  /users/{username}
-├── docs/[section].pyx           →  /docs/{section}
-└── shop/[productSlug].pyx       →  /shop/{productSlug}
+├── users/[username].pyxl         →  /users/{username}
+├── docs/[section].pyxl           →  /docs/{section}
+└── shop/[productSlug].pyxl       →  /shop/{productSlug}
 ```
 
 You can have multiple dynamic segments at different levels:
@@ -100,7 +100,7 @@ pages/
     └── [org]/
         └── repos/
             └── [repo]/
-                └── settings.pyx →  /orgs/{org}/repos/{repo}/settings
+                └── settings.pyxl →  /orgs/{org}/repos/{repo}/settings
 ```
 
 Dynamic segments can sit alongside static ones:
@@ -109,13 +109,13 @@ Dynamic segments can sit alongside static ones:
 pages/
 └── blog/
     ├── [year]/
-    │   ├── index.pyx            →  /blog/{year}
-    │   └── [slug].pyx           →  /blog/{year}/{slug}
-    └── archive.pyx              →  /blog/archive
+    │   ├── index.pyxl            →  /blog/{year}
+    │   └── [slug].pyxl           →  /blog/{year}/{slug}
+    └── archive.pyxl              →  /blog/archive
 ```
 
 Routing is **most-specific-first**, so `/blog/archive` will match
-`archive.pyx` rather than the dynamic `[year]/index.pyx`. (This is
+`archive.pyxl` rather than the dynamic `[year]/index.pyxl`. (This is
 Starlette's standard behaviour — Pyxle doesn't override it.)
 
 ### Parameter name sanitization
@@ -155,7 +155,7 @@ Pyxle uses `[...name]` for this:
 ```
 pages/
 └── docs/
-    └── [...slug].pyx            →  /docs/{slug:path}
+    └── [...slug].pyxl            →  /docs/{slug:path}
 ```
 
 The `path` converter tells Starlette to match everything (including
@@ -164,18 +164,18 @@ single string like `"getting-started/installation"`. You can split it
 on `/` to get the segments.
 
 Catch-all routes only match URLs with **at least one** segment after
-the prefix. So `[...slug].pyx` matches `/docs/foo` and
+the prefix. So `[...slug].pyxl` matches `/docs/foo` and
 `/docs/foo/bar` but **not** `/docs` itself.
 
 If you want to match `/docs` *as well as* `/docs/foo`, you need the
-optional catch-all (next section), or you can add an `index.pyx`
+optional catch-all (next section), or you can add an `index.pyxl`
 sibling:
 
 ```
 pages/
 └── docs/
-    ├── index.pyx                →  /docs            (matches "/docs")
-    └── [...slug].pyx            →  /docs/{slug:path}  (matches "/docs/anything/else")
+    ├── index.pyxl                →  /docs            (matches "/docs")
+    └── [...slug].pyxl            →  /docs/{slug:path}  (matches "/docs/anything/else")
 ```
 
 ---
@@ -188,11 +188,11 @@ case:
 ```
 pages/
 └── shop/
-    └── [[...path]].pyx          →  /shop/{path:path}  (primary)
+    └── [[...path]].pyxl          →  /shop/{path:path}  (primary)
                                      /shop              (alias)
 ```
 
-This is the same as a catch-all plus an `index.pyx` sibling, but in
+This is the same as a catch-all plus an `index.pyxl` sibling, but in
 one file. It's useful when you have a single component that should
 render for the entire URL space under a prefix — for example a
 storefront that handles `/shop`, `/shop/electronics`, and
@@ -223,12 +223,12 @@ becoming part of the URL. Pyxle uses **parentheses** for this:
 ```
 pages/
 ├── (marketing)/
-│   ├── index.pyx                →  /
-│   ├── about.pyx                →  /about
-│   └── pricing.pyx              →  /pricing
+│   ├── index.pyxl                →  /
+│   ├── about.pyxl                →  /about
+│   └── pricing.pyxl              →  /pricing
 └── (app)/
-    ├── dashboard.pyx            →  /dashboard
-    └── settings.pyx             →  /settings
+    ├── dashboard.pyxl            →  /dashboard
+    └── settings.pyxl             →  /settings
 ```
 
 The `(marketing)` and `(app)` segments are **invisible to routing**
@@ -243,12 +243,12 @@ You can nest route groups inside dynamic segments and vice versa:
 ```
 pages/
 ├── (auth)/
-│   ├── login.pyx                →  /login
-│   └── signup.pyx               →  /signup
+│   ├── login.pyxl                →  /login
+│   └── signup.pyxl               →  /signup
 └── (dashboard)/
     └── orgs/
         └── [org]/
-            └── settings.pyx     →  /orgs/{org}/settings
+            └── settings.pyxl     →  /orgs/{org}/settings
 ```
 
 Source: `routing/paths.py:75` (just `_is_route_group` — six lines).
@@ -261,19 +261,19 @@ Here's every routing feature in one table:
 
 | Source filename                              | Route                            | Notes |
 |---|---|---|
-| `pages/index.pyx`                            | `/`                              | Index of root |
-| `pages/about.pyx`                            | `/about`                         | Static route |
-| `pages/posts/index.pyx`                      | `/posts`                         | Index collapses |
-| `pages/posts/[id].pyx`                       | `/posts/{id}`                    | Dynamic segment |
-| `pages/posts/[id]/comments.pyx`              | `/posts/{id}/comments`           | Nested under dynamic |
-| `pages/docs/[...slug].pyx`                   | `/docs/{slug:path}`              | Catch-all (>=1 segment) |
-| `pages/shop/[[...path]].pyx`                 | `/shop/{path:path}`<br>`/shop`   | Optional catch-all (primary + alias) |
-| `pages/(marketing)/about.pyx`                | `/about`                         | Group is invisible |
-| `pages/(auth)/login.pyx`                     | `/login`                         | Group is invisible |
+| `pages/index.pyxl`                            | `/`                              | Index of root |
+| `pages/about.pyxl`                            | `/about`                         | Static route |
+| `pages/posts/index.pyxl`                      | `/posts`                         | Index collapses |
+| `pages/posts/[id].pyxl`                       | `/posts/{id}`                    | Dynamic segment |
+| `pages/posts/[id]/comments.pyxl`              | `/posts/{id}/comments`           | Nested under dynamic |
+| `pages/docs/[...slug].pyxl`                   | `/docs/{slug:path}`              | Catch-all (>=1 segment) |
+| `pages/shop/[[...path]].pyxl`                 | `/shop/{path:path}`<br>`/shop`   | Optional catch-all (primary + alias) |
+| `pages/(marketing)/about.pyxl`                | `/about`                         | Group is invisible |
+| `pages/(auth)/login.pyxl`                     | `/login`                         | Group is invisible |
 | `pages/api/health.py`                        | `/api/health`                    | API route (Python only) |
-| `pages/layout.pyx`                           | *(not a route)*                  | Layout — wraps siblings |
-| `pages/error.pyx`                            | *(not a route)*                  | Error boundary |
-| `pages/not-found.pyx`                        | *(not a route)*                  | 404 boundary |
+| `pages/layout.pyxl`                           | *(not a route)*                  | Layout — wraps siblings |
+| `pages/error.pyxl`                            | *(not a route)*                  | Error boundary |
+| `pages/not-found.pyxl`                        | *(not a route)*                  | 404 boundary |
 
 The last three are **special filenames** — they're not routes
 themselves; they affect how other routes render. We'll cover them
@@ -283,18 +283,18 @@ in the next sections.
 
 ## Layouts
 
-A `layout.pyx` file at any level of the tree wraps every route below
+A `layout.pyxl` file at any level of the tree wraps every route below
 it. For example:
 
 ```
 pages/
-├── layout.pyx                   ← root layout, wraps everything
-├── index.pyx                    →  /            (wrapped by root)
-├── about.pyx                    →  /about       (wrapped by root)
+├── layout.pyxl                   ← root layout, wraps everything
+├── index.pyxl                    →  /            (wrapped by root)
+├── about.pyxl                    →  /about       (wrapped by root)
 └── dashboard/
-    ├── layout.pyx               ← dashboard layout
-    ├── index.pyx                →  /dashboard   (root → dashboard → page)
-    └── settings.pyx             →  /dashboard/settings
+    ├── layout.pyxl               ← dashboard layout
+    ├── index.pyxl                →  /dashboard   (root → dashboard → page)
+    └── settings.pyxl             →  /dashboard/settings
 ```
 
 The dashboard's `/dashboard/settings` route is rendered as:
@@ -333,15 +333,15 @@ module instead of the raw page file, so the dev server and the
 bundler load the wrapped version automatically.
 
 The layout discovery + composition logic lives in
-`devserver/layouts.py:27-220`. When you add or remove a `layout.pyx`,
+`devserver/layouts.py:27-220`. When you add or remove a `layout.pyxl`,
 the file watcher detects the change and rebuilds every route under
 that directory's subtree.
 
-A `layout.pyx` looks like a regular page, but its component receives
+A `layout.pyxl` looks like a regular page, but its component receives
 a `children` prop instead of `data`:
 
 ```python
-# pages/layout.pyx
+# pages/layout.pyxl
 @server
 async def load_root_layout(request):
     return {"appName": "MyApp"}
@@ -368,44 +368,44 @@ component via the `data` prop. (The page component still gets its own
 
 ### Templates: layouts that don't persist
 
-A `template.pyx` is like a `layout.pyx` but with one key difference:
+A `template.pyxl` is like a `layout.pyxl` but with one key difference:
 **templates remount on every navigation**. A layout keeps its DOM
 and React state across navigation; a template throws everything away
 and rebuilds.
 
 This matters for things like animations that should restart on
 every page change, or analytics that should fire once per page view.
-Use `template.pyx` for "stateless wrapper around the page" and
-`layout.pyx` for "persistent shell that survives navigation."
+Use `template.pyxl` for "stateless wrapper around the page" and
+`layout.pyxl` for "persistent shell that survives navigation."
 
 ---
 
 ## Error boundaries
 
-A `error.pyx` file at any level catches errors raised by descendants.
+A `error.pyxl` file at any level catches errors raised by descendants.
 When a loader raises `LoaderError("not found", status_code=404)`, or
 when a component throws during SSR, Pyxle walks up the tree from the
-current route looking for the nearest `error.pyx` and renders it.
+current route looking for the nearest `error.pyxl` and renders it.
 
 ```
 pages/
-├── error.pyx                    ← root error boundary, catches everything
-├── index.pyx
+├── error.pyxl                    ← root error boundary, catches everything
+├── index.pyxl
 └── orgs/
-    ├── error.pyx                ← scoped to /orgs/* routes
+    ├── error.pyxl                ← scoped to /orgs/* routes
     └── [org]/
-        └── settings.pyx
+        └── settings.pyxl
 ```
 
 If `/orgs/acme/settings`'s loader raises, Pyxle first tries
-`pages/orgs/error.pyx`. If that also fails (or doesn't exist), it
-falls back to `pages/error.pyx`. If neither exists, it falls back to
+`pages/orgs/error.pyxl`. If that also fails (or doesn't exist), it
+falls back to `pages/error.pyxl`. If neither exists, it falls back to
 the framework's default error document.
 
 The error boundary component receives the error context as a prop:
 
 ```python
-# pages/error.pyx
+# pages/error.pyxl
 import React from 'react';
 
 export default function ErrorBoundary({ error }) {
@@ -429,20 +429,20 @@ The boundary discovery logic lives in
 
 ## Not-found boundaries
 
-A `not-found.pyx` file is the same idea, scoped to 404 responses.
+A `not-found.pyxl` file is the same idea, scoped to 404 responses.
 When a request hits Pyxle and no route matches, the framework walks
-up from the request path looking for the nearest `not-found.pyx`:
+up from the request path looking for the nearest `not-found.pyxl`:
 
 ```
 pages/
-├── not-found.pyx                ← root 404 page
+├── not-found.pyxl                ← root 404 page
 └── docs/
-    ├── not-found.pyx            ← custom 404 for /docs/* routes
-    └── getting-started.pyx
+    ├── not-found.pyxl            ← custom 404 for /docs/* routes
+    └── getting-started.pyxl
 ```
 
-A request for `/docs/nope` first tries `/docs/not-found.pyx`. A
-request for `/random` falls through to `/not-found.pyx`. If neither
+A request for `/docs/nope` first tries `/docs/not-found.pyxl`. A
+request for `/random` falls through to `/not-found.pyxl`. If neither
 exists, the framework returns a plain 404 response.
 
 ---
@@ -450,7 +450,7 @@ exists, the framework returns a plain 404 response.
 ## API routes
 
 Pages are JSX-rendered HTML. **API routes** are pure JSON endpoints
-under `pages/api/`. They use plain `.py` files (not `.pyx`) because
+under `pages/api/`. They use plain `.py` files (not `.pyxl`) because
 they have no client component:
 
 ```
@@ -497,7 +497,7 @@ API routes can use the same dynamic segment syntax as pages
 
 ## Action routes
 
-`@action`-decorated functions inside a `.pyx` page get their own
+`@action`-decorated functions inside a `.pyxl` page get their own
 endpoint at `/api/__actions/{action_name}`. This is invisible — you
 never write the URL — but it's how the client-side `useAction()` hook
 talks to the server.
@@ -505,7 +505,7 @@ talks to the server.
 For example, given:
 
 ```python
-# pages/dashboard.pyx
+# pages/dashboard.pyxl
 @server
 async def load(request):
     return {"count": 0}
@@ -533,7 +533,7 @@ POSTs to the `/api/__actions/increment` URL with whatever payload you
 pass it. The action returns its result as JSON.
 
 Action names must be **unique within a page** (the parser enforces
-this). Across pages, names can collide — but each `.pyx` file
+this). Across pages, names can collide — but each `.pyxl` file
 registers its actions independently, so the routing is per-page.
 
 Action routing lives in `devserver/starlette_app.py:363-484`.
@@ -567,7 +567,7 @@ When Starlette receives a request, here's what happens (simplified):
    matching `@action` function in the relevant page.
 
 7. **Catch-all 404 handler** walks up the request path looking for
-   the nearest `not-found.pyx`. Renders it if found, otherwise
+   the nearest `not-found.pyxl`. Renders it if found, otherwise
    returns a plain 404.
 
 The order matters: static files are served before any dynamic

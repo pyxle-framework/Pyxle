@@ -119,7 +119,7 @@ def test_devserver_start_runs_with_stubbed_uvicorn(monkeypatch, tmp_path: Path) 
     logger = ConsoleLogger(secho=lambda message, fg=None, bold=False: capture.append(message))
 
     def fake_build_once(config: DevServerSettings, *, force_rebuild: bool = False) -> BuildSummary:
-        return BuildSummary(compiled_pages=["pages/index.pyx"], copied_api_modules=[], removed=[])
+        return BuildSummary(compiled_pages=["pages/index.pyxl"], copied_api_modules=[], removed=[])
 
     monkeypatch.setattr("pyxle.devserver.build_once", fake_build_once)
     monkeypatch.setattr(
@@ -162,13 +162,13 @@ def test_devserver_start_runs_with_stubbed_uvicorn(monkeypatch, tmp_path: Path) 
 
         def start(self) -> None:
             self.started = True
-            stats = BuildSummary(compiled_pages=["pages/index.pyx"], copied_api_modules=[], removed=[])
+            stats = BuildSummary(compiled_pages=["pages/index.pyxl"], copied_api_modules=[], removed=[])
             self._on_rebuild(
                 WatcherStatistics(
                     elapsed_seconds=0.1,
                     summary=stats,
                     error=None,
-                    changed_paths=[self._cfg.pages_dir / "pages" / "index.pyx"],
+                    changed_paths=[self._cfg.pages_dir / "pages" / "index.pyxl"],
                 )
             )
 
@@ -220,4 +220,4 @@ def test_devserver_start_runs_with_stubbed_uvicorn(monkeypatch, tmp_path: Path) 
     assert watcher_instances[0].closed is True
     assert any("Starting Starlette" in message for message in capture)
     assert overlay_calls and overlay_calls[0]
-    assert overlay_calls[0][0].endswith("pages/index.pyx")
+    assert overlay_calls[0][0].endswith("pages/index.pyxl")

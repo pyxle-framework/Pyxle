@@ -4,7 +4,7 @@
 
 ### What is Pyxle?
 
-Pyxle is a Python-first full-stack web framework. It combines Python server logic with React components in `.pyx` files, providing file-based routing, server-side rendering, and a development experience inspired by Next.js.
+Pyxle is a Python-first full-stack web framework. It combines Python server logic with React components in `.pyxl` files, providing file-based routing, server-side rendering, and a development experience inspired by Next.js.
 
 ### How is Pyxle different from Next.js?
 
@@ -32,11 +32,11 @@ Python 3.10 or later. Python 3.12 is recommended.
 
 Node.js 18 or later. Node.js 20+ is recommended.
 
-## `.pyx` files
+## `.pyxl` files
 
-### Can I use TypeScript in `.pyx` files?
+### Can I use TypeScript in `.pyxl` files?
 
-The JSX section supports JSX syntax. TypeScript type annotations are not directly supported in `.pyx` files, but you can run `pyxle typecheck` to type-check the compiled JSX output if you have TypeScript installed.
+The JSX section supports JSX syntax. TypeScript type annotations are not directly supported in `.pyxl` files, but you can run `pyxle typecheck` to type-check the compiled JSX output if you have TypeScript installed.
 
 ### Can I import Python code in the JSX section?
 
@@ -48,13 +48,13 @@ Yes. Any npm package that works with React 18 and Vite should work. Install it v
 
 ### Can I have multiple loaders in one file?
 
-No. Only one `@server` function per `.pyx` file. You can have multiple `@action` functions.
+No. Only one `@server` function per `.pyxl` file. You can have multiple `@action` functions.
 
 ## Routing
 
 ### How do I create a 404 page?
 
-Create `pages/not-found.pyx`:
+Create `pages/not-found.pyxl`:
 
 ```jsx
 export default function NotFoundPage() {
@@ -64,15 +64,15 @@ export default function NotFoundPage() {
 
 ### How do I create a catch-all route?
 
-Use `[...slug].pyx`:
+Use `[...slug].pyxl`:
 
 ```
-pages/docs/[...slug].pyx  -->  /docs/anything/here
+pages/docs/[...slug].pyxl  -->  /docs/anything/here
 ```
 
 ### How do I exclude a folder from routing?
 
-Wrap it in parentheses: `pages/(admin)/dashboard.pyx` creates the route `/dashboard`, not `/admin/dashboard`.
+Wrap it in parentheses: `pages/(admin)/dashboard.pyxl` creates the route `/dashboard`, not `/admin/dashboard`.
 
 ## Data loading
 
@@ -102,7 +102,7 @@ Yes. Loaders are standard async Python functions. Use any async database library
 
 ### What happens if my loader throws an unhandled exception?
 
-If you raise `LoaderError`, the nearest `error.pyx` is rendered. Other exceptions render a default error page. In dev mode, the error overlay shows the full stack trace.
+If you raise `LoaderError`, the nearest `error.pyxl` is rendered. Other exceptions render a default error page. In dev mode, the error overlay shows the full stack trace.
 
 ## Styling
 
@@ -205,7 +205,7 @@ Make sure Tailwind is compiled. Run `npm run dev:css` in a separate terminal, or
 
 The compiled Python module could not be imported. Check:
 
-1. Syntax errors in the Python section of your `.pyx` file
+1. Syntax errors in the Python section of your `.pyxl` file
 2. Missing Python dependencies (run `pip install -r requirements.txt`)
 3. Import errors in your `@server` function
 

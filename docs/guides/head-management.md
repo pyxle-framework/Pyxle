@@ -110,7 +110,7 @@ export function SeoTags({ title, description, image }) {
   );
 }
 
-// pages/blog/[slug].pyx
+// pages/blog/[slug].pyxl
 import { SeoTags } from '../../components/SeoTags.jsx';
 
 export default function BlogPost({ data }) {
@@ -132,7 +132,7 @@ This is the idiomatic way to build SEO presets, third-party tracking tags, and t
 
 ## The `HEAD` variable (lower-level alternative)
 
-`.pyx` files can also define a `HEAD` variable in the Python section. This was Pyxle's original head mechanism and still works; the parser extracts it at compile time, before React is involved.
+`.pyxl` files can also define a `HEAD` variable in the Python section. This was Pyxle's original head mechanism and still works; the parser extracts it at compile time, before React is involved.
 
 ```python
 # Static string
@@ -198,7 +198,7 @@ Within the same tier, deeper nesting wins (a `<Head>` in a child component overr
 ### Example: layout defaults + page overrides
 
 ```jsx
-// pages/layout.pyx
+// pages/layout.pyxl
 import { Head } from 'pyxle/client';
 
 export default function RootLayout({ children }) {
@@ -216,7 +216,7 @@ export default function RootLayout({ children }) {
 ```
 
 ```jsx
-// pages/about.pyx
+// pages/about.pyxl
 import { Head } from 'pyxle/client';
 
 export default function About() {

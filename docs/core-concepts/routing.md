@@ -4,17 +4,17 @@ Pyxle uses **file-based routing**. The file structure inside your `pages/` direc
 
 ## Basic routes
 
-Every `.pyx` file in `pages/` becomes a route:
+Every `.pyxl` file in `pages/` becomes a route:
 
 | File | URL |
 |------|-----|
-| `pages/index.pyx` | `/` |
-| `pages/about.pyx` | `/about` |
-| `pages/contact.pyx` | `/contact` |
-| `pages/blog/index.pyx` | `/blog` |
-| `pages/blog/archive.pyx` | `/blog/archive` |
+| `pages/index.pyxl` | `/` |
+| `pages/about.pyxl` | `/about` |
+| `pages/contact.pyxl` | `/contact` |
+| `pages/blog/index.pyxl` | `/blog` |
+| `pages/blog/archive.pyxl` | `/blog/archive` |
 
-The `index.pyx` filename is special -- it maps to the parent directory's path.
+The `index.pyxl` filename is special -- it maps to the parent directory's path.
 
 ## Dynamic segments
 
@@ -22,9 +22,9 @@ Wrap a filename segment in square brackets to create a dynamic route parameter:
 
 | File | URL Pattern | Example |
 |------|-------------|---------|
-| `pages/blog/[slug].pyx` | `/blog/:slug` | `/blog/hello-world` |
-| `pages/users/[id].pyx` | `/users/:id` | `/users/42` |
-| `pages/[category]/[id].pyx` | `/:category/:id` | `/electronics/99` |
+| `pages/blog/[slug].pyxl` | `/blog/:slug` | `/blog/hello-world` |
+| `pages/users/[id].pyxl` | `/users/:id` | `/users/42` |
+| `pages/[category]/[id].pyxl` | `/:category/:id` | `/electronics/99` |
 
 Access dynamic parameters in your loader via `request.path_params`:
 
@@ -44,16 +44,16 @@ export default function BlogPost({ data }) {
 
 ### Parameter name rules
 
-- Hyphens in parameter names become underscores: `[user-id].pyx` --> `request.path_params["user_id"]`
+- Hyphens in parameter names become underscores: `[user-id].pyxl` --> `request.path_params["user_id"]`
 - The parameter name is sanitised to be a valid Python identifier
 
 ## Catch-all routes
 
-Use `[...param].pyx` to match any number of path segments:
+Use `[...param].pyxl` to match any number of path segments:
 
 | File | URL Pattern | Example Matches |
 |------|-------------|----------------|
-| `pages/docs/[...slug].pyx` | `/docs/*` | `/docs/getting-started`, `/docs/api/config` |
+| `pages/docs/[...slug].pyxl` | `/docs/*` | `/docs/getting-started`, `/docs/api/config` |
 
 The parameter captures the entire remaining path as a string:
 
@@ -66,11 +66,11 @@ async def load_docs(request):
 
 ## Optional catch-all routes
 
-Use `[[...param]].pyx` (double brackets) to match the parent path **and** any sub-paths:
+Use `[[...param]].pyxl` (double brackets) to match the parent path **and** any sub-paths:
 
 | File | URL Pattern | Example Matches |
 |------|-------------|----------------|
-| `pages/docs/[[...slug]].pyx` | `/docs` and `/docs/*` | `/docs`, `/docs/intro`, `/docs/api/ref` |
+| `pages/docs/[[...slug]].pyxl` | `/docs` and `/docs/*` | `/docs`, `/docs/intro`, `/docs/api/ref` |
 
 This creates two routes: one for the exact parent path and one for the catch-all.
 
@@ -81,11 +81,11 @@ Wrap a directory name in parentheses to **exclude it from the URL**:
 ```
 pages/
   (marketing)/
-    pricing.pyx      -->  /pricing     (not /marketing/pricing)
-    features.pyx     -->  /features
+    pricing.pyxl      -->  /pricing     (not /marketing/pricing)
+    features.pyxl     -->  /features
   (dashboard)/
-    settings.pyx     -->  /settings
-    profile.pyx      -->  /profile
+    settings.pyxl     -->  /settings
+    profile.pyxl      -->  /profile
 ```
 
 Route groups let you organise files by concern without affecting URLs.
@@ -100,7 +100,7 @@ Python files under `pages/api/` become API endpoints:
 | `pages/api/users.py` | `/api/users` |
 | `pages/api/users/[id].py` | `/api/users/:id` |
 
-API routes are standard Python files (not `.pyx`). See [API Routes](../guides/api-routes.md) for details.
+API routes are standard Python files (not `.pyxl`). See [API Routes](../guides/api-routes.md) for details.
 
 ## Viewing your route table
 
@@ -119,10 +119,10 @@ These filenames have special meaning and do not create their own routes:
 
 | File | Purpose |
 |------|---------|
-| `layout.pyx` | Wraps sibling and descendant pages in a shared layout |
-| `template.pyx` | Like layout but resets state on navigation |
-| `error.pyx` | Error boundary for sibling and descendant pages |
-| `not-found.pyx` | 404 page for the current directory scope |
+| `layout.pyxl` | Wraps sibling and descendant pages in a shared layout |
+| `template.pyxl` | Like layout but resets state on navigation |
+| `error.pyxl` | Error boundary for sibling and descendant pages |
+| `not-found.pyxl` | 404 page for the current directory scope |
 
 See [Layouts](layouts.md) and [Error Handling](../guides/error-handling.md).
 

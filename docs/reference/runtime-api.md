@@ -1,6 +1,6 @@
 # Runtime API Reference
 
-The `pyxle.runtime` module provides decorators and error classes used in `.pyx` files. These are automatically available in the Python section of every `.pyx` file -- you do not need to import them (the compiler injects the import).
+The `pyxle.runtime` module provides decorators and error classes used in `.pyxl` files. These are automatically available in the Python section of every `.pyxl` file -- you do not need to import them (the compiler injects the import).
 
 ## `@server`
 
@@ -19,7 +19,7 @@ async def load_page(request):
 - Receives a Starlette [`Request`](https://www.starlette.io/requests/) object
 - Must return a JSON-serializable `dict`
 - Can return a `(dict, int)` tuple to set the HTTP status code
-- Only one `@server` function is allowed per `.pyx` file
+- Only one `@server` function is allowed per `.pyxl` file
 
 **Request object properties:**
 
@@ -50,7 +50,7 @@ async def create_item(request):
 - The function must be `async`
 - Receives a Starlette `Request` object
 - Must return a JSON-serializable `dict`
-- Multiple `@action` functions are allowed per `.pyx` file
+- Multiple `@action` functions are allowed per `.pyxl` file
 - Accessible via `POST /api/__actions/{page_path}/{action_name}`
 - Protected by CSRF middleware by default
 
@@ -66,7 +66,7 @@ async def create_item(request):
 
 ## `LoaderError`
 
-Exception class for structured loader errors. Triggers the nearest `error.pyx` boundary.
+Exception class for structured loader errors. Triggers the nearest `error.pyxl` boundary.
 
 ```python
 from pyxle.runtime import LoaderError
@@ -157,7 +157,7 @@ See [Head Management](../guides/head-management.md) for the full pattern (layout
 
 ### `HEAD` variable (lower-level alternative)
 
-Not part of `pyxle.runtime` but available in every `.pyx` file. The `HEAD` variable is extracted at compile time by the parser; use it for fully-static head metadata that doesn't need React context, or for pages without a JSX component.
+Not part of `pyxle.runtime` but available in every `.pyxl` file. The `HEAD` variable is extracted at compile time by the parser; use it for fully-static head metadata that doesn't need React context, or for pages without a JSX component.
 
 **Static form:**
 

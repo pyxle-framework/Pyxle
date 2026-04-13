@@ -7,7 +7,7 @@ Every rule here exists to keep Pyxle enterprise-grade, stable, and maintainable.
 
 ## Project Overview
 
-Pyxle is a Python-first full-stack web framework. `.pyx` files colocate Python server
+Pyxle is a Python-first full-stack web framework. `.pyxl` files colocate Python server
 logic (`@server` loaders, `@action` mutations) with React/JSX components. The stack is
 Starlette (ASGI), Vite (bundling), React 18 (rendering), and esbuild (SSR transpilation).
 
@@ -16,7 +16,7 @@ Starlette (ASGI), Vite (bundling), React 18 (rendering), and esbuild (SSR transp
 - `PYXLE_AUDIT.md` — architectural strengths, risks, and bottlenecks
 - `pyproject.toml` — dependencies, test config, coverage thresholds
 - `pyxle/runtime.py` — the `@server` and `@action` decorator contracts
-- `pyxle/compiler/parser.py` — the `.pyx` parser (most complex module)
+- `pyxle/compiler/parser.py` — the `.pyxl` parser (most complex module)
 - `pyxle/devserver/starlette_app.py` — request routing and middleware stack
 - `pyxle/ssr/renderer.py` — SSR rendering pipeline (performance-critical)
 
@@ -84,7 +84,7 @@ The codebase has clear separation of concerns:
 | `pyxle/cli/` | CLI commands, user-facing I/O | Everything below |
 | `pyxle/devserver/` | Dev server, Vite proxy, file watcher | compiler, ssr, routing, config |
 | `pyxle/ssr/` | Server-side rendering, head merging | compiler (models only), config |
-| `pyxle/compiler/` | `.pyx` parsing, code generation | Nothing from pyxle (standalone) |
+| `pyxle/compiler/` | `.pyxl` parsing, code generation | Nothing from pyxle (standalone) |
 | `pyxle/routing/` | File-based route calculation | Nothing from pyxle (standalone) |
 | `pyxle/build/` | Production build pipeline | compiler, devserver, config |
 | `pyxle/config.py` | Configuration parsing | Nothing from pyxle (standalone) |
@@ -258,7 +258,7 @@ Use the primary module changed as the commit scope: `compiler`, `devserver`, `ss
 ### 24. Modifying the Compiler or Parser
 
 The parser (`pyxle/compiler/parser.py`) is the most sensitive code. Changes here can
-break every `.pyx` file in existence.
+break every `.pyxl` file in existence.
 
 - **Always** add regression tests for the specific input pattern you're handling
 - **Never** remove an existing test
@@ -334,7 +334,7 @@ ruff check pyxle/ tests/
 ```
 pyxle/                          # Framework source
 |-- cli/                        # CLI commands (Typer)
-|-- compiler/                   # .pyx -> .py + .jsx compiler
+|-- compiler/                   # .pyxl -> .py + .jsx compiler
 |   |-- parser.py               # State-machine parser (most complex)
 |   |-- writers.py              # Server/client code emission
 |   |-- model.py                # Compilation data models

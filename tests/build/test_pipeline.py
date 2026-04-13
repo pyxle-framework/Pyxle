@@ -29,14 +29,14 @@ def test_run_build_invokes_vite_and_copies_artifacts(monkeypatch, tmp_path):
 
     settings = DevServerSettings.from_project_root(project)
 
-    summary = BuildSummary(compiled_pages=["pages/index.pyx"])
+    summary = BuildSummary(compiled_pages=["pages/index.pyxl"])
     registry = MetadataRegistry(
         pages=[
             PageRegistryEntry(
                 route_path="/",
                 alternate_route_paths=(),
-                source_relative_path=Path("pages/index.pyx"),
-                source_absolute_path=pages_dir / "index.pyx",
+                source_relative_path=Path("pages/index.pyxl"),
+                source_absolute_path=pages_dir / "index.pyxl",
                 server_module_path=server_build / "index.py",
                 client_module_path=settings.client_build_dir / "pages" / "index.jsx",
                 metadata_path=metadata_build / "index.json",

@@ -51,24 +51,24 @@ The client receives `{ "ok": false, "error": "Name must be at least 2 characters
 | `status_code` | `int` | `400` | HTTP status code |
 | `data` | `dict` | `{}` | Additional data in the error response |
 
-## Error boundaries (`error.pyx`)
+## Error boundaries (`error.pyxl`)
 
-Create an `error.pyx` file to catch errors from pages in the same directory and below:
+Create an `error.pyxl` file to catch errors from pages in the same directory and below:
 
 ```
 pages/
-  error.pyx          # Catches errors from all pages
-  index.pyx
+  error.pyxl          # Catches errors from all pages
+  index.pyxl
   dashboard/
-    error.pyx        # Catches errors from dashboard pages only
-    index.pyx
-    settings.pyx
+    error.pyxl        # Catches errors from dashboard pages only
+    index.pyxl
+    settings.pyxl
 ```
 
 An error boundary is a React component that receives the error context as props:
 
 ```jsx
-// pages/error.pyx
+// pages/error.pyxl
 export default function ErrorPage({ error }) {
   return (
     <div>
@@ -94,19 +94,19 @@ The `error` prop contains:
 
 ### Boundary resolution
 
-When an error occurs, Pyxle walks up the directory tree from the page that failed until it finds an `error.pyx`:
+When an error occurs, Pyxle walks up the directory tree from the page that failed until it finds an `error.pyxl`:
 
-- `pages/dashboard/settings.pyx` throws -->
-  1. Check `pages/dashboard/error.pyx`
-  2. Check `pages/error.pyx`
+- `pages/dashboard/settings.pyxl` throws -->
+  1. Check `pages/dashboard/error.pyxl`
+  2. Check `pages/error.pyxl`
   3. Use default error document
 
-## Not-found pages (`not-found.pyx`)
+## Not-found pages (`not-found.pyxl`)
 
-Create a `not-found.pyx` file to customise the 404 page:
+Create a `not-found.pyxl` file to customise the 404 page:
 
 ```jsx
-// pages/not-found.pyx
+// pages/not-found.pyxl
 export default function NotFoundPage() {
   return (
     <div>
@@ -118,7 +118,7 @@ export default function NotFoundPage() {
 }
 ```
 
-Like error boundaries, not-found pages follow directory scoping -- a `not-found.pyx` in `pages/docs/` handles 404s within `/docs/*`.
+Like error boundaries, not-found pages follow directory scoping -- a `not-found.pyxl` in `pages/docs/` handles 404s within `/docs/*`.
 
 ## Dev mode error overlay
 

@@ -25,7 +25,7 @@ when you save a file, and how to read the dev server's source code.
 | `routes.py` (~280) | The `PageRoute` / `ApiRoute` / `ActionRoute` dataclasses |
 | `layouts.py` (~295) | Generates layout-wrapped client modules |
 | `overlay.py` (~105) | WebSocket overlay for error notifications |
-| `error_pages.py` (~140) | Discovers `error.pyx` and `not-found.pyx` boundaries |
+| `error_pages.py` (~140) | Discovers `error.pyxl` and `not-found.pyxl` boundaries |
 | `route_hooks.py` (~225) | Per-route middleware policies |
 | `middleware.py` (~75) | Loads custom user middleware modules |
 | `tailwind.py` (~300) | Optional Tailwind CSS watcher |
@@ -55,7 +55,7 @@ $ pyxle dev
    │
    ▼
 2. Initial compile (builder.py)
-   - Scan pages/ for .pyx and .py files
+   - Scan pages/ for .pyxl and .py files
    - Compile every file via PyxParser + ArtifactWriter
    - Write .pyxle-build/{server,client,metadata}/ artifacts
    - Compose layouts
@@ -133,7 +133,7 @@ a `Starlette` instance with:
   — serves whatever's in `public/`.
 - **Health endpoints** — `/healthz` and `/readyz` for orchestration.
 - **Catch-all 404** — walks up the request path looking for the
-  nearest `not-found.pyx` boundary.
+  nearest `not-found.pyxl` boundary.
 - **WebSocket route** at `/__pyxle/overlay` — used by the dev
   overlay client.
 
@@ -176,14 +176,14 @@ runs **one build pass** — initial compile, or rebuild after a file
 change. It:
 
 1. **Scans `pages/`** with `scanner.scan_source_tree()` to find
-   every `.pyx`, `pages/api/*.py`, and client asset file. For each
+   every `.pyxl`, `pages/api/*.py`, and client asset file. For each
    file, it computes the SHA256 hash of the contents.
 2. **Compares hashes against the previous build's metadata** to
    find which files actually changed since last time.
-3. **Compiles only the changed `.pyx` files** by calling
+3. **Compiles only the changed `.pyxl` files** by calling
    `compile_file()` for each. Unchanged files are left alone.
 4. **Copies API modules** (`pages/api/*.py`) to their build location.
-5. **Composes layouts** for any pages whose ancestor `layout.pyx`
+5. **Composes layouts** for any pages whose ancestor `layout.pyxl`
    files have changed (`layouts.compose_layout_templates()`).
 6. **Syncs global stylesheets and scripts** declared in the config.
 7. **Removes orphaned artifacts** for source files that have been
@@ -201,7 +201,7 @@ Source: `devserver/builder.py:50-160`.
 
 ### When does a layout-only change trigger a page rebuild?
 
-Layouts are tricky: when you edit `pages/dashboard/layout.pyx`,
+Layouts are tricky: when you edit `pages/dashboard/layout.pyxl`,
 **every page under `pages/dashboard/`** needs its composed route
 module regenerated. The composed module is what bundles the layout
 with the page, so it needs to be re-emitted whenever the layout's
@@ -235,7 +235,7 @@ overlay so the browser can display the error inline.
 
 ### Module cache invalidation
 
-When a `.pyx` file's *Python half* changes, the dev server's existing
+When a `.pyxl` file's *Python half* changes, the dev server's existing
 imported version of the compiled `.py` is stale. Python's import
 system caches modules in `sys.modules` — re-importing the same module
 key returns the cached version.
@@ -369,8 +369,8 @@ projects) and the correctness is much easier to reason about.
 
 A layout's `<Head>` JSX block contributes to every page below it.
 At registry-build time, `find_layout_head_jsx_blocks()` walks
-ancestor directories of each page looking for `layout.pyx` (and
-`template.pyx`) metadata, collects their `head_jsx_blocks`, and
+ancestor directories of each page looking for `layout.pyxl` (and
+`template.pyxl`) metadata, collects their `head_jsx_blocks`, and
 attaches the merged list to the page's `PageRoute`. The SSR
 pipeline reads this at request time without re-parsing.
 

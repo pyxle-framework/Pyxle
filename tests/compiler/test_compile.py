@@ -40,7 +40,7 @@ def test_compile_dynamic_route_emits_artifacts(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "project/pages/posts/[id].pyx", content)
+    source = write(tmp_path, "project/pages/posts/[id].pyxl", content)
     build_root = tmp_path / "project/.pyxle-build"
 
     result = compile_file(source, build_root=build_root)
@@ -63,13 +63,13 @@ def test_compile_dynamic_route_emits_artifacts(tmp_path: Path) -> None:
     assert metadata["client_path"] == "/pages/posts/[id].jsx"
     assert metadata["server_path"] == "/pages/posts/[id].py"
     assert metadata["head"] == []
-    assert "Compiled [id].pyx" in result.summary()
+    assert "Compiled [id].pyxl" in result.summary()
 
 
 def test_compile_optional_catchall_adds_alias_route(tmp_path: Path) -> None:
     source = write(
         tmp_path,
-        "project/pages/docs/[[...slug]].pyx",
+        "project/pages/docs/[[...slug]].pyxl",
         """import React from 'react';\n\nexport default function Docs() {\n    return <div>Docs</div>;\n}\n""",
     )
     build_root = tmp_path / "project/.pyxle-build"
@@ -97,7 +97,7 @@ def test_compile_injects_runtime_server_import(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "project/pages/demo.pyx", content)
+    source = write(tmp_path, "project/pages/demo.pyxl", content)
     build_root = tmp_path / "project/.pyxle-build"
 
     result = compile_file(source, build_root=build_root)
@@ -122,7 +122,7 @@ def test_compile_respects_user_defined_server_decorator(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "project/pages/custom.pyx", content)
+    source = write(tmp_path, "project/pages/custom.pyxl", content)
     build_root = tmp_path / "project/.pyxle-build"
 
     result = compile_file(source, build_root=build_root)
@@ -147,7 +147,7 @@ def test_compile_injects_import_after_docstring(tmp_path: Path) -> None:
         '''
     )
 
-    source = write(tmp_path, "project/pages/doc.pyx", content)
+    source = write(tmp_path, "project/pages/doc.pyxl", content)
     build_root = tmp_path / "project/.pyxle-build"
 
     result = compile_file(source, build_root=build_root)
@@ -170,7 +170,7 @@ def test_compile_preserves_existing_server_import(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "project/pages/imported.pyx", content)
+    source = write(tmp_path, "project/pages/imported.pyxl", content)
     build_root = tmp_path / "project/.pyxle-build"
 
     result = compile_file(source, build_root=build_root)
@@ -202,7 +202,7 @@ def test_compile_respects_server_assignment(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "project/pages/assigned.pyx", content)
+    source = write(tmp_path, "project/pages/assigned.pyxl", content)
     build_root = tmp_path / "project/.pyxle-build"
 
     result = compile_file(source, build_root=build_root)
@@ -223,7 +223,7 @@ def test_compile_respects_server_import_alias(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "project/pages/alias.pyx", content)
+    source = write(tmp_path, "project/pages/alias.pyxl", content)
     build_root = tmp_path / "project/.pyxle-build"
 
     result = compile_file(source, build_root=build_root)
@@ -310,7 +310,7 @@ def test_compile_respects_server_attribute_assignment(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "project/pages/attr.pyx", content)
+    source = write(tmp_path, "project/pages/attr.pyxl", content)
     build_root = tmp_path / "project/.pyxle-build"
 
     result = compile_file(source, build_root=build_root)
@@ -352,7 +352,7 @@ def test_compile_persists_head_elements(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "project/pages/meta.pyx", content)
+    source = write(tmp_path, "project/pages/meta.pyxl", content)
     build_root = tmp_path / "project/.pyxle-build"
 
     result = compile_file(source, build_root=build_root)
@@ -386,7 +386,7 @@ def test_compile_marks_dynamic_head(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "project/pages/dynamic.pyx", content)
+    source = write(tmp_path, "project/pages/dynamic.pyxl", content)
     build_root = tmp_path / "project/.pyxle-build"
 
     result = compile_file(source, build_root=build_root)
@@ -411,7 +411,7 @@ def test_compile_static_page_uses_stub(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "project/pages/index.pyx", content)
+    source = write(tmp_path, "project/pages/index.pyxl", content)
     build_root = tmp_path / "project/.pyxle-build"
 
     result = compile_file(source, build_root=build_root)
@@ -426,17 +426,17 @@ def test_compile_static_page_uses_stub(tmp_path: Path) -> None:
     assert "Landing" in client_text
 
 
-def test_compile_rewrites_pyx_imports_in_client_output(tmp_path: Path) -> None:
+def test_compile_rewrites_pyxl_imports_in_client_output(tmp_path: Path) -> None:
     content = dedent(
         """
         import React from 'react';
 
-        import Layout from './layout.pyx';
-        import { Hero } from '../components/hero.pyx';
-        export { Footer } from '../components/footer.pyx';
+        import Layout from './layout.pyxl';
+        import { Hero } from '../components/hero.pyxl';
+        export { Footer } from '../components/footer.pyxl';
 
-        const Lazy = React.lazy(() => import('../chunks/hero.pyx'));
-        const Skip = import(condition ? '../chunks/skip.pyx' : '../chunks/unused.pyx');
+        const Lazy = React.lazy(() => import('../chunks/hero.pyxl'));
+        const Skip = import(condition ? '../chunks/skip.pyxl' : '../chunks/unused.pyxl');
 
         export default function Page() {
             return (
@@ -449,7 +449,7 @@ def test_compile_rewrites_pyx_imports_in_client_output(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "project/pages/index.pyx", content)
+    source = write(tmp_path, "project/pages/index.pyxl", content)
     build_root = tmp_path / "project/.pyxle-build"
 
     result = compile_file(source, build_root=build_root)
@@ -459,7 +459,7 @@ def test_compile_rewrites_pyx_imports_in_client_output(tmp_path: Path) -> None:
     assert "../components/hero.jsx" in client_text
     assert "../chunks/hero.jsx" in client_text
     # Conditional dynamic import should not change because the specifier isn't a literal.
-    assert "../chunks/skip.pyx" in client_text
+    assert "../chunks/skip.pyxl" in client_text
 
 
 def test_compile_passes_through_side_effect_css_imports(tmp_path: Path) -> None:
@@ -485,7 +485,7 @@ def test_compile_passes_through_side_effect_css_imports(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "project/pages/index.pyx", content)
+    source = write(tmp_path, "project/pages/index.pyxl", content)
     build_root = tmp_path / "project/.pyxle-build"
 
     result = compile_file(source, build_root=build_root)
@@ -495,18 +495,18 @@ def test_compile_passes_through_side_effect_css_imports(tmp_path: Path) -> None:
     assert 'import "../shared/extra.css";' in client_text
 
 
-def test_compile_rejects_non_pyx_files(tmp_path: Path) -> None:
+def test_compile_rejects_non_pyxl_files(tmp_path: Path) -> None:
     source = write(tmp_path, "project/pages/index.jsx", "console.log('hi');")
     build_root = tmp_path / "project/.pyxle-build"
 
     with pytest.raises(CompilationError) as excinfo:
         compile_file(source, build_root=build_root)
 
-    assert "Only `.pyx`" in str(excinfo.value)
+    assert "Only `.pyxl`" in str(excinfo.value)
 
 
 def test_compile_requires_pages_directory(tmp_path: Path) -> None:
-    source = write(tmp_path, "project/index.pyx", "export default function Demo() { return <div />; }")
+    source = write(tmp_path, "project/index.pyxl", "export default function Demo() { return <div />; }")
     build_root = tmp_path / "project/.pyxle-build"
 
     with pytest.raises(CompilationError) as excinfo:
@@ -515,9 +515,9 @@ def test_compile_requires_pages_directory(tmp_path: Path) -> None:
     assert "pages" in str(excinfo.value)
 
 
-def test_compile_rejects_file_named_pages_pyx(tmp_path: Path) -> None:
+def test_compile_rejects_file_named_pages_pyxl(tmp_path: Path) -> None:
     """A path whose last directory component is literally ``pages`` (the
-    .pyx file is named ``pages.pyx``) triggers the
+    .pyxl file is named ``pages.pyxl``) triggers the
     "Expected file path inside pages/" branch."""
     from pyxle.compiler.core import _relative_page_path
 
@@ -543,7 +543,7 @@ def test_compilation_result_validates_output_paths(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError):
         CompilationResult(
-            source_path=tmp_path / "pages/demo.pyx",
+            source_path=tmp_path / "pages/demo.pyxl",
             python_code="",
             jsx_code="",
             server_output=tmp_path,  # directory

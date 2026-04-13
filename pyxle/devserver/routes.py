@@ -52,7 +52,7 @@ class ActionRoute:
     page's server module.
 
     For pages with catch-all or dynamic route parameters (e.g.
-    ``[[...slug]].pyx``), an additional catch-all action route is registered
+    ``[[...slug]].pyxl``), an additional catch-all action route is registered
     so that URLs constructed from the full browser path still resolve.
     These routes set ``is_catchall=True`` and extract the action name from
     the last segment of the captured path at dispatch time.

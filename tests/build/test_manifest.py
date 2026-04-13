@@ -19,8 +19,8 @@ def registry(tmp_path: Path) -> MetadataRegistry:
     page_entry = PageRegistryEntry(
         route_path="/",
         alternate_route_paths=(),
-        source_relative_path=Path("pages/index.pyx"),
-        source_absolute_path=tmp_path / "pages" / "index.pyx",
+        source_relative_path=Path("pages/index.pyxl"),
+        source_absolute_path=tmp_path / "pages" / "index.pyxl",
         server_module_path=server_path,
         client_module_path=tmp_path / "client" / "pages" / "index.jsx",
         metadata_path=metadata_path,

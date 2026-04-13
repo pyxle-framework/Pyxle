@@ -2,7 +2,7 @@
  * Pyxle Client Runtime
  * 
  * React components for Pyxle framework features.
- * Import these in your .pyx files:
+ * Import these in your .pyxl files:
  * 
  * import { Head, Script, Image, ClientOnly } from 'pyxle/client'
  */

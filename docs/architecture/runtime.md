@@ -157,7 +157,7 @@ If `@server` doesn't *do* anything, why is it a decorator? Why not
 just a naming convention like Flask's `def hello():`?
 
 Because **the parser uses the decorator name to find loaders and
-actions in the AST**. When the parser walks your `.pyx` file, it
+actions in the AST**. When the parser walks your `.pyxl` file, it
 asks each function definition: *"is one of your decorators called
 `server`?"* If yes, it treats the function as a loader. Same for
 `@action`.
@@ -219,7 +219,7 @@ async def load_post(request):
 
 When `LoaderError` is raised:
 - The framework catches it.
-- It looks for the nearest `error.pyx` boundary.
+- It looks for the nearest `error.pyxl` boundary.
 - It renders the boundary with the error context as a prop:
   `{error: {message, statusCode, data}}`.
 - It returns the response with HTTP status `404`.
@@ -297,7 +297,7 @@ does the framework find your loader when a request comes in?
 
 The answer: **at parse time, not at runtime.**
 
-When the parser processes `pages/index.pyx`, `_detect_loader()`
+When the parser processes `pages/index.pyxl`, `_detect_loader()`
 walks the Python AST looking for `AsyncFunctionDef` nodes whose
 `decorator_list` contains a `Name` named `server` or an `Attribute`
 ending in `.server`. The first match becomes the loader. Its name
@@ -405,7 +405,7 @@ parser at compile time:
 ```
 $ pyxle check
 error: [python] line 5: @server loader must be declared as async
-  --> pages/sync_loader.pyx
+  --> pages/sync_loader.pyxl
 ```
 
 The reason is consistency: every Pyxle handler runs on the asyncio

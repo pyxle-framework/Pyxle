@@ -88,7 +88,7 @@ pyxle dev ./my-app --print-config
 **What it does:**
 
 1. Loads configuration from `pyxle.config.json` + environment variables + CLI flags
-2. Compiles `.pyx` files into Python and JSX modules
+2. Compiles `.pyxl` files into Python and JSX modules
 3. Starts the Vite dev server for React hot reload
 4. Starts the Tailwind watcher (if detected)
 5. Starts the Starlette ASGI server
@@ -145,7 +145,7 @@ pyxle serve --ssr-workers 4
 
 ## `pyxle check`
 
-Validate `.pyx` syntax, configuration, and dependencies.
+Validate `.pyxl` syntax, configuration, and dependencies.
 
 ```bash
 pyxle check [directory] [options]
@@ -159,8 +159,8 @@ pyxle check [directory] [options]
 **Example output:**
 
 ```
-  Compiling pages/index.pyx
-  Compiling pages/about.pyx
+  Compiling pages/index.pyxl
+  Compiling pages/about.pyxl
   2 pages compiled, 0 errors
 ```
 
@@ -168,7 +168,7 @@ Errors are reported with file location and hints:
 
 ```
   error: @server function must be async
-    --> pages/index.pyx:15:1
+    --> pages/index.pyxl:15:1
     hint: Change 'def load_page' to 'async def load_page'
 ```
 
@@ -205,8 +205,8 @@ pyxle routes [directory] [options]
 
 ```
 Route              File                      Loader
-/                  pages/index.pyx           load_home
-/about             pages/about.pyx           --
-/blog/{slug}       pages/blog/[slug].pyx     load_post
+/                  pages/index.pyxl           load_home
+/about             pages/about.pyxl           --
+/blog/{slug}       pages/blog/[slug].pyxl     load_post
 /api/pulse         pages/api/pulse.py        --
 ```

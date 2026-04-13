@@ -181,13 +181,18 @@ def test_manual_key_deduplication():
 
 
 def test_no_dedupe_key_keeps_all():
-    """Elements without dedupe key should all be kept."""
+    """Elements without dedupe key should all be kept.
+
+    Note: ``<base>`` elements are stripped by the sanitizer because
+    they can re-root all relative URLs on the page (XSS gadget).
+    Use ``<link rel="preconnect">`` to test non-deduped behaviour.
+    """
     result = merge_head_elements(
-        head_variable=('<base href="/" />',),
-        head_jsx_blocks=('<base href="/app/" />',),
+        head_variable=('<link rel="preconnect" href="https://a.example" />',),
+        head_jsx_blocks=('<link rel="preconnect" href="https://b.example" />',),
         layout_head_jsx_blocks=(),
     )
-    # Base tags don't have dedupe logic, both kept
+    # preconnect links without matching href are kept as separate entries
     assert len(result) == 2
 
 

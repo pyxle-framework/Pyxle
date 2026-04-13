@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 @dataclass(eq=False)
 class CompilationError(Exception):
-    """Raised when a `.pyx` file cannot be compiled."""
+    """Raised when a `.pyxl` file cannot be compiled."""
 
     message: str
     line_number: int | None = None

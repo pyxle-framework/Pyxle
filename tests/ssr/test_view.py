@@ -83,8 +83,8 @@ def settings(tmp_path: Path) -> DevServerSettings:
 def _page_route(tmp_path: Path, *, loader_name: str | None) -> PageRoute:
     return PageRoute(
         path="/",
-        source_relative_path=Path("index.pyx"),
-        source_absolute_path=tmp_path / "pages" / "index.pyx",
+        source_relative_path=Path("index.pyxl"),
+        source_absolute_path=tmp_path / "pages" / "index.pyxl",
         server_module_path=tmp_path / "server" / "index.py",
         client_module_path=tmp_path / "client" / "index.jsx",
         metadata_path=tmp_path / "metadata" / "index.json",
@@ -904,15 +904,15 @@ def test_resolve_head_elements_callable_requires_data_argument(tmp_path: Path) -
 @pytest.mark.anyio
 async def test_build_page_response_merges_layout_head_blocks(settings: DevServerSettings, tmp_path: Path) -> None:
     """Test that layout head JSX blocks are merged with page head elements."""
-    # Create layout.pyx with head blocks
-    layout_path = settings.pages_dir / "layout.pyx"
+    # Create layout.pyxl with head blocks
+    layout_path = settings.pages_dir / "layout.pyxl"
     layout_path.write_text(
         """\n\nimport React from 'react';\n\nexport default function Layout({ children }) {\n    return <div>{children}</div>;\n}\n<Head>\n<meta name='layout-meta' content='from-layout'/>\n</Head>\n""",
         encoding="utf-8",
     )
 
-    # Create index.pyx with head elements and jsx blocks
-    page_path = settings.pages_dir / "index.pyx"
+    # Create index.pyxl with head elements and jsx blocks
+    page_path = settings.pages_dir / "index.pyxl"
     page_path.write_text(
         """HEAD = "<title>Home</title>"\n\nimport React from 'react';\n\nexport default function Home({ data }) {\n    return <div>{data.message}</div>;\n}\n<Head>\n<meta name='page-meta' content='from-page'/>\n</Head>\n""",
         encoding="utf-8",
@@ -987,8 +987,8 @@ async def test_build_page_response_loader_error_hits_error_boundary(
 
     page = PageRoute(
         path="/",
-        source_relative_path=Path("index.pyx"),
-        source_absolute_path=tmp_path / "pages" / "index.pyx",
+        source_relative_path=Path("index.pyxl"),
+        source_absolute_path=tmp_path / "pages" / "index.pyxl",
         server_module_path=server_module,
         client_module_path=tmp_path / "client" / "index.jsx",
         metadata_path=tmp_path / "metadata" / "index.json",
@@ -1044,8 +1044,8 @@ async def test_build_page_navigation_response_loader_error_uses_status_code(
 
     page = PageRoute(
         path="/nav",
-        source_relative_path=Path("nav.pyx"),
-        source_absolute_path=tmp_path / "pages" / "nav.pyx",
+        source_relative_path=Path("nav.pyxl"),
+        source_absolute_path=tmp_path / "pages" / "nav.pyxl",
         server_module_path=server_module,
         client_module_path=tmp_path / "client" / "nav.jsx",
         metadata_path=tmp_path / "metadata" / "nav.json",

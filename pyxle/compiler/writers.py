@@ -7,7 +7,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from .jsx_imports import rewrite_pyx_import_specifiers
+from .jsx_imports import rewrite_pyxl_import_specifiers
 from .model import ActionDeclaration, CompilationResult, ImageDeclaration, PageMetadata, ScriptDeclaration
 from .parser import PyxParseResult
 
@@ -63,7 +63,7 @@ class ArtifactWriter:
             if parse_result.jsx_code.strip()
             else _JSX_STUB
         )
-        jsx_code, _ = rewrite_pyx_import_specifiers(jsx_code)
+        jsx_code, _ = rewrite_pyxl_import_specifiers(jsx_code)
 
         server_output.write_text(python_code, encoding="utf-8")
         client_output.write_text(jsx_code, encoding="utf-8")

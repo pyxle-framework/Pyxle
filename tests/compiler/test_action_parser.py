@@ -1,4 +1,4 @@
-"""Tests for @action detection in the .pyx parser."""
+"""Tests for @action detection in the .pyxl parser."""
 
 from __future__ import annotations
 

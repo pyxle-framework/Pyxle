@@ -1,4 +1,4 @@
-"""AST-driven parser that splits ``.pyx`` files into Python and JSX segments.
+"""AST-driven parser that splits ``.pyxl`` files into Python and JSX segments.
 
 The parser is purely AST-driven: no fence markers, no string-based
 directives, no per-line heuristics. The Python/JSX boundary is found
@@ -67,7 +67,7 @@ class PyxDiagnostic:
     message:
         Human-readable error message.
     line:
-        1-indexed line number in the original ``.pyx`` source, or
+        1-indexed line number in the original ``.pyxl`` source, or
         ``None`` if the position is unknown.
     column:
         1-indexed column number, or ``None``.
@@ -82,7 +82,7 @@ class PyxDiagnostic:
 
 @dataclass(frozen=True)
 class PyxParseResult:
-    """The product of parsing a ``.pyx`` file."""
+    """The product of parsing a ``.pyxl`` file."""
 
     python_code: str
     jsx_code: str
@@ -270,6 +270,11 @@ class _JsState:
     string, comment, or nesting.
     """
 
+    # Maximum allowed nesting depth for braces, parentheses, and brackets.
+    # Prevents CPU exhaustion from deeply-nested expressions in malicious
+    # or auto-generated .pyxl files.
+    MAX_NESTING_DEPTH: int = 256
+
     string: str | None = None  # ', ", `, or None
     block_comment: bool = False
     brace_depth: int = 0
@@ -329,14 +334,32 @@ class _JsState:
                     continue
             if ch == "{":
                 self.brace_depth += 1
+                if self.brace_depth > self.MAX_NESTING_DEPTH:
+                    from pyxle.compiler.exceptions import CompilationError
+
+                    raise CompilationError(
+                        f"Maximum nesting depth exceeded ({self.MAX_NESTING_DEPTH})"
+                    )
             elif ch == "}":
                 self.brace_depth = max(0, self.brace_depth - 1)
             elif ch == "(":
                 self.paren_depth += 1
+                if self.paren_depth > self.MAX_NESTING_DEPTH:
+                    from pyxle.compiler.exceptions import CompilationError
+
+                    raise CompilationError(
+                        f"Maximum nesting depth exceeded ({self.MAX_NESTING_DEPTH})"
+                    )
             elif ch == ")":
                 self.paren_depth = max(0, self.paren_depth - 1)
             elif ch == "[":
                 self.bracket_depth += 1
+                if self.bracket_depth > self.MAX_NESTING_DEPTH:
+                    from pyxle.compiler.exceptions import CompilationError
+
+                    raise CompilationError(
+                        f"Maximum nesting depth exceeded ({self.MAX_NESTING_DEPTH})"
+                    )
             elif ch == "]":
                 self.bracket_depth = max(0, self.bracket_depth - 1)
             j += 1
@@ -597,7 +620,7 @@ def _concat_segments(
     their original 1-indexed line numbers tracked in ``python_line_numbers``.
     Same for JSX. The line maps let downstream code (notably the loader/
     action validators) translate line numbers in the joined output back
-    to the original ``.pyx`` source.
+    to the original ``.pyxl`` source.
     """
     python_lines: list[str] = []
     python_line_numbers: list[int] = []
@@ -972,7 +995,7 @@ def _validate_jsx_syntax(
 
 
 class PyxParser:
-    """Parses ``.pyx`` files into Python and JSX segments plus metadata."""
+    """Parses ``.pyxl`` files into Python and JSX segments plus metadata."""
 
     def parse(
         self,
@@ -981,12 +1004,12 @@ class PyxParser:
         tolerant: bool = False,
         validate_jsx: bool = False,
     ) -> PyxParseResult:
-        """Parse a ``.pyx`` file from disk into a :class:`PyxParseResult`.
+        """Parse a ``.pyxl`` file from disk into a :class:`PyxParseResult`.
 
         Parameters
         ----------
         source_path:
-            Path to the ``.pyx`` file. Read with ``utf-8-sig`` so a
+            Path to the ``.pyxl`` file. Read with ``utf-8-sig`` so a
             leading byte-order mark is consumed transparently.
         tolerant:
             When True, syntax and semantic errors are collected as
@@ -1011,7 +1034,7 @@ class PyxParser:
         tolerant: bool = False,
         validate_jsx: bool = False,
     ) -> PyxParseResult:
-        """Parse a ``.pyx`` source string into a :class:`PyxParseResult`."""
+        """Parse a ``.pyxl`` source string into a :class:`PyxParseResult`."""
         lines = _normalize_newlines(text)
         collector = _DiagnosticCollector(tolerant=tolerant)
 

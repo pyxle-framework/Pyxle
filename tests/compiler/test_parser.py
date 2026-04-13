@@ -28,7 +28,7 @@ def test_parse_static_page(tmp_path: Path) -> None:
         """
     ).strip("\n")
 
-    source = write(tmp_path, "pages/about.pyx", content)
+    source = write(tmp_path, "pages/about.pyxl", content)
 
     result = PyxParser().parse(source)
 
@@ -50,7 +50,7 @@ def test_parse_text_round_trip(tmp_path: Path) -> None:
         """
     ).strip("\n")
 
-    source_path = write(tmp_path, "pages/about.pyx", source_text)
+    source_path = write(tmp_path, "pages/about.pyxl", source_text)
     parser = PyxParser()
 
     from_disk = parser.parse(source_path)
@@ -80,7 +80,7 @@ def test_parse_loader_detection(tmp_path: Path) -> None:
         ]
     )
 
-    source = write(tmp_path, "pages/index.pyx", content)
+    source = write(tmp_path, "pages/index.pyxl", content)
     result = PyxParser().parse(source)
 
     assert result.loader is not None
@@ -104,7 +104,7 @@ def test_parse_non_async_loader_raises(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "pages/bad.pyx", content)
+    source = write(tmp_path, "pages/bad.pyxl", content)
 
     with pytest.raises(CompilationError) as excinfo:
         PyxParser().parse(source)
@@ -129,7 +129,7 @@ def test_parse_multiple_loaders_raises(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "pages/multi.pyx", content)
+    source = write(tmp_path, "pages/multi.pyxl", content)
 
     with pytest.raises(CompilationError) as excinfo:
         PyxParser().parse(source)
@@ -151,7 +151,7 @@ def test_parse_nested_loader_not_allowed(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "pages/nested.pyx", content)
+    source = write(tmp_path, "pages/nested.pyxl", content)
 
     with pytest.raises(CompilationError) as excinfo:
         PyxParser().parse(source)
@@ -172,7 +172,7 @@ def test_parse_windows_newlines_normalized(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "pages/windows.pyx", base)
+    source = write(tmp_path, "pages/windows.pyxl", base)
     result = PyxParser().parse(source)
 
     assert "\r" not in result.python_code
@@ -210,7 +210,7 @@ def test_parse_nested_blocks_and_decorators(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "pages/posts/[id].pyx", content)
+    source = write(tmp_path, "pages/posts/[id].pyxl", content)
     result = PyxParser().parse(source)
 
     assert result.loader is not None
@@ -235,7 +235,7 @@ def test_parse_tuple_return_loaders_supported(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "pages/tuple.pyx", content)
+    source = write(tmp_path, "pages/tuple.pyxl", content)
     result = PyxParser().parse(source)
 
     assert result.loader is not None
@@ -272,7 +272,7 @@ def test_parse_allows_interleaved_python_and_js_sections(tmp_path: Path) -> None
         """
     ).strip("\n")
 
-    source = write(tmp_path, "pages/mixed.pyx", content)
+    source = write(tmp_path, "pages/mixed.pyxl", content)
     result = PyxParser().parse(source)
 
     assert result.loader is not None
@@ -299,7 +299,7 @@ def test_parse_python_multiline_string_with_js_content(tmp_path: Path) -> None:
         """
     ).lstrip("\n")
 
-    source = write(tmp_path, "pages/stringy.pyx", content)
+    source = write(tmp_path, "pages/stringy.pyxl", content)
     result = PyxParser().parse(source)
 
     assert "import React, { useEffect, useState } from 'react';" in result.python_code
@@ -320,7 +320,7 @@ def test_parse_python_line_continuation_not_treated_as_js(tmp_path: Path) -> Non
         """
     ).lstrip("\n")
 
-    source = write(tmp_path, "pages/continuation.pyx", content)
+    source = write(tmp_path, "pages/continuation.pyxl", content)
     result = PyxParser().parse(source)
 
     assert "value = 1 +" in result.python_code
@@ -342,7 +342,7 @@ def test_parse_inconsistent_indentation_raises(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "pages/bad_indent.pyx", content)
+    source = write(tmp_path, "pages/bad_indent.pyxl", content)
 
     with pytest.raises(CompilationError) as excinfo:
         PyxParser().parse(source)
@@ -366,7 +366,7 @@ def test_parse_inconsistent_dedent_raises(tmp_path: Path) -> None:
         ]
     )
 
-    source = write(tmp_path, "pages/bad_dedent.pyx", content)
+    source = write(tmp_path, "pages/bad_dedent.pyxl", content)
 
     with pytest.raises(CompilationError) as excinfo:
         PyxParser().parse(source)
@@ -458,7 +458,7 @@ def test_parse_server_decorator_on_class_raises(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "pages/class.pyx", content)
+    source = write(tmp_path, "pages/class.pyxl", content)
 
     with pytest.raises(CompilationError) as excinfo:
         PyxParser().parse(source)
@@ -479,7 +479,7 @@ def test_parse_loader_requires_request_argument(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "pages/no_request.pyx", content)
+    source = write(tmp_path, "pages/no_request.pyxl", content)
 
     with pytest.raises(CompilationError) as excinfo:
         PyxParser().parse(source)
@@ -500,7 +500,7 @@ def test_parse_loader_requires_request_name(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "pages/bad_request_name.pyx", content)
+    source = write(tmp_path, "pages/bad_request_name.pyxl", content)
 
     with pytest.raises(CompilationError) as excinfo:
         PyxParser().parse(source)
@@ -520,7 +520,7 @@ def test_parse_python_helpers_without_loader(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "pages/helper_only.pyx", content)
+    source = write(tmp_path, "pages/helper_only.pyxl", content)
     result = PyxParser().parse(source)
 
     assert result.loader is None
@@ -550,7 +550,7 @@ def test_parse_head_elements_from_literal(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "pages/meta.pyx", content)
+    source = write(tmp_path, "pages/meta.pyxl", content)
     result = PyxParser().parse(source)
 
     assert result.head_elements == (
@@ -582,7 +582,7 @@ def test_parse_preserves_multiline_triple_quoted_python(tmp_path: Path) -> None:
         '''
     )
 
-    source = write(tmp_path, "pages/multiline.pyx", content)
+    source = write(tmp_path, "pages/multiline.pyxl", content)
     result = PyxParser().parse(source)
 
     assert '<title>Example</title>' in result.python_code
@@ -604,7 +604,7 @@ def test_parse_head_none_returns_empty_literal(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "pages/head_none.pyx", content)
+    source = write(tmp_path, "pages/head_none.pyxl", content)
     result = PyxParser().parse(source)
 
     assert result.head_elements == ()
@@ -623,7 +623,7 @@ def test_parse_head_tuple_literal(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "pages/head_tuple.pyx", content)
+    source = write(tmp_path, "pages/head_tuple.pyxl", content)
     result = PyxParser().parse(source)
 
     assert result.head_elements == ("<title>Tuple</title>",)
@@ -644,7 +644,7 @@ def test_parse_marks_head_dynamic_when_expression(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "pages/dynamic_head.pyx", content)
+    source = write(tmp_path, "pages/dynamic_head.pyxl", content)
     result = PyxParser().parse(source)
 
     assert result.head_elements == ()
@@ -666,7 +666,7 @@ def test_parse_head_list_with_non_string_marks_dynamic(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "pages/head_mixed.pyx", content)
+    source = write(tmp_path, "pages/head_mixed.pyxl", content)
     result = PyxParser().parse(source)
 
     assert result.head_elements == ()
@@ -686,7 +686,7 @@ def test_parse_head_function_marks_dynamic(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "pages/head_function.pyx", content)
+    source = write(tmp_path, "pages/head_function.pyxl", content)
     result = PyxParser().parse(source)
 
     assert result.head_elements == ()
@@ -706,7 +706,7 @@ def test_parse_head_skips_other_assignments(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "pages/head_with_title.pyx", content)
+    source = write(tmp_path, "pages/head_with_title.pyxl", content)
     result = PyxParser().parse(source)
 
     assert result.head_elements == ("<title>Chosen</title>",)
@@ -726,7 +726,7 @@ def test_parse_head_elements_invalid_type_raises(tmp_path: Path) -> None:
         """
     )
 
-    source = write(tmp_path, "pages/invalid_head.pyx", content)
+    source = write(tmp_path, "pages/invalid_head.pyxl", content)
 
     with pytest.raises(CompilationError) as excinfo:
         PyxParser().parse(source)
@@ -749,7 +749,7 @@ def test_parse_triple_quoted_string_with_indented_content(tmp_path: Path) -> Non
         '''
     ).lstrip("\n")
 
-    source = write(tmp_path, "pages/triple_quoted.pyx", content)
+    source = write(tmp_path, "pages/triple_quoted.pyxl", content)
     result = PyxParser().parse(source)
 
     assert 'HEAD = """' in result.python_code
@@ -769,7 +769,7 @@ def test_parse_triple_quoted_string_with_indented_content(tmp_path: Path) -> Non
 
 class TestMultiSectionAutoDetection:
     """The new parser supports arbitrary alternation of Python and JSX
-    blocks within a single ``.pyx`` file, without requiring fence markers.
+    blocks within a single ``.pyxl`` file, without requiring fence markers.
     """
 
     def test_python_jsx_python_jsx_alternation(self):

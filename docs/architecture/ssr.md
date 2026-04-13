@@ -66,7 +66,7 @@ Source: `ssr/view.py:51-202`.
 
 If anything goes wrong at any stage, error handling kicks in:
 
-- A `LoaderError` triggers the nearest `error.pyx` boundary.
+- A `LoaderError` triggers the nearest `error.pyxl` boundary.
 - A `ComponentRenderError` (the React component crashes during SSR)
   also tries the error boundary.
 - An unexpected exception falls through to `render_error_document()`,
@@ -98,7 +98,7 @@ if settings.debug:
     _purge_page_modules(settings.pages_dir)
 ```
 
-This is the hot-reload mechanism. When you save a `.pyx` file:
+This is the hot-reload mechanism. When you save a `.pyxl` file:
 
 1. The watcher rebuilds the artifacts.
 2. The `.py` file on disk has new content.
@@ -148,7 +148,7 @@ A few invariants hold:
   same error pipeline as any other render failure.
 
 If the loader raises `LoaderError`, Pyxle catches it and looks for the
-nearest `error.pyx` boundary up the directory tree. If found, it
+nearest `error.pyxl` boundary up the directory tree. If found, it
 renders the error page with the error context as a prop. If not, it
 renders the default error document.
 
@@ -166,7 +166,7 @@ The `<head>` of the HTML response is assembled from up to **four**
 sources, in order of increasing priority:
 
 1. **Layout `<Head>` JSX blocks** — collected at registry-build time
-   from `layout.pyx` (and `template.pyx`) ancestors of the current
+   from `layout.pyxl` (and `template.pyxl`) ancestors of the current
    page.
 2. **The page's `HEAD` variable** — Python string, list of strings,
    or callable returning either. If it's a callable, Pyxle invokes
@@ -572,8 +572,8 @@ Errors at each stage are routed to a specific handler:
 
 | Stage | Exception | What happens |
 |---|---|---|
-| Loader | `LoaderError` | Render nearest `error.pyx` with error context |
-| Loader | Other exception | Render nearest `error.pyx` with generic error context |
+| Loader | `LoaderError` | Render nearest `error.pyxl` with error context |
+| Loader | Other exception | Render nearest `error.pyxl` with generic error context |
 | HEAD | `HeadEvaluationError` | Render error boundary or default error doc |
 | Render | `ComponentRenderError` | Render error boundary or default error doc |
 | Anything | Other exception | Render `error_document` (dev) / generic 500 (prod) |

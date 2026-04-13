@@ -1,4 +1,4 @@
-"""Compiler entry points for transforming `.pyx` files."""
+"""Compiler entry points for transforming `.pyxl` files."""
 
 from __future__ import annotations
 

@@ -1,6 +1,6 @@
 # Editor setup
 
-Pyxle Language Tools brings first-class IDE support to `.pyx` files — syntax
+Pyxle Language Tools brings first-class IDE support to `.pyxl` files — syntax
 highlighting, diagnostics, completions, hover documentation, go-to-definition,
 and formatting. Everything works out of the box with a single install.
 
@@ -38,7 +38,7 @@ Or install it as an optional extra with the framework:
 pip install pyxle-framework[langkit]
 ```
 
-That's it. Open any `.pyx` file and you'll see the **✓ Pyxle** indicator
+That's it. Open any `.pyxl` file and you'll see the **✓ Pyxle** indicator
 in the status bar when the language server connects.
 
 ---
@@ -47,7 +47,7 @@ in the status bar when the language server connects.
 
 ### Syntax highlighting
 
-`.pyx` files get dual-language highlighting — Python sections are
+`.pyxl` files get dual-language highlighting — Python sections are
 highlighted as Python, JSX sections as JavaScript/React. The grammar
 correctly handles template literals, so code snippets inside backtick
 strings won't confuse the highlighter.
@@ -112,7 +112,7 @@ current file: loaders, actions, functions, classes, and JSX exports.
 
 ### Formatting
 
-Format `.pyx` files with section-aware formatting:
+Format `.pyxl` files with section-aware formatting:
 
 - **Python sections** — formatted with [ruff](https://docs.astral.sh/ruff/)
   (or optionally [black](https://black.readthedocs.io/)).
@@ -160,20 +160,20 @@ The language toolkit also provides command-line tools for CI pipelines
 and scripting:
 
 ```bash
-# Parse a .pyx file and output its structure as JSON
-pyxle-langkit parse pages/index.pyx
+# Parse a .pyxl file and output its structure as JSON
+pyxle-langkit parse pages/index.pyxl
 
-# Lint a .pyx file (exit code 1 on errors)
-pyxle-langkit lint pages/index.pyx
+# Lint a .pyxl file (exit code 1 on errors)
+pyxle-langkit lint pages/index.pyxl
 
 # Show the symbol outline
-pyxle-langkit outline pages/index.pyx
+pyxle-langkit outline pages/index.pyxl
 
-# Format a .pyx file
-pyxle-langkit format pages/index.pyx
+# Format a .pyxl file
+pyxle-langkit format pages/index.pyxl
 
 # Check if a file needs formatting (without modifying it)
-pyxle-langkit format pages/index.pyx --check
+pyxle-langkit format pages/index.pyxl --check
 ```
 
 ### Lint in CI
@@ -182,7 +182,7 @@ Add to your CI pipeline to catch issues before merge:
 
 ```bash
 pip install pyxle-langkit
-pyxle-langkit lint pages/*.pyx
+pyxle-langkit lint pages/*.pyxl
 ```
 
 ---
@@ -212,10 +212,10 @@ vim.api.nvim_create_autocmd("FileType", {
 })
 ```
 
-You'll also need to register the `.pyx` filetype:
+You'll also need to register the `.pyxl` filetype:
 
 ```lua
-vim.filetype.add({ extension = { pyx = "pyxle" } })
+vim.filetype.add({ extension = { pyxl = "pyxle" } })
 ```
 
 ### Sublime Text

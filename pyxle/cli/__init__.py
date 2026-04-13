@@ -732,7 +732,7 @@ def serve(
         logger.error(f"Production server encountered an error: {exc}")
         raise typer.Exit(code=1) from exc
 
-@app.command(help="Validate .pyx files, configuration, and project dependencies.")
+@app.command(help="Validate .pyxl files, configuration, and project dependencies.")
 def check(
     directory: Path = typer.Argument(
         Path("."),
@@ -775,7 +775,7 @@ def check(
     if not package_json.is_file():
         warnings.append("No package.json found")
 
-    # --- Compile all .pyx files ---
+    # --- Compile all .pyxl files ---
     #
     # Tolerant mode collects every diagnostic per file instead of stopping
     # at the first error, so a single ``pyxle check`` run reports ALL
@@ -783,22 +783,22 @@ def check(
     # ``validate_jsx=True`` adds Babel-backed JSX syntax validation so
     # broken JSX (``<Tag>...<`` unclosed, mismatched braces, etc.) is
     # surfaced here instead of waiting for the build step.
-    pyx_count = 0
+    pyxl_count = 0
     diagnostics: list[tuple[str, str]] = []  # (file, message) pairs
     if pages_dir.is_dir():
         from pyxle.compiler.parser import PyxParser
 
         parser = PyxParser()
-        for pyx_file in sorted(pages_dir.rglob("*.pyx")):
-            pyx_count += 1
-            rel_path = str(pyx_file.relative_to(project_root))
+        for pyxl_file in sorted(pages_dir.rglob("*.pyxl")):
+            pyxl_count += 1
+            rel_path = str(pyxl_file.relative_to(project_root))
             # Tolerant-mode parse should never raise, but we defensively
             # wrap each call so any unexpected parser bug on a single
             # file doesn't abort the entire check and lose the
             # diagnostics for every file that follows.
             try:
                 result = parser.parse(
-                    pyx_file, tolerant=True, validate_jsx=True
+                    pyxl_file, tolerant=True, validate_jsx=True
                 )
             except Exception as exc:  # noqa: BLE001 — defensive CLI boundary
                 diagnostics.append(
@@ -817,7 +817,7 @@ def check(
                 diagnostics.append((rel_path, message))
 
     # --- Report ---
-    logger.info(f"Checked {pyx_count} .pyx file(s) in {project_root.name}/")
+    logger.info(f"Checked {pyxl_count} .pyxl file(s) in {project_root.name}/")
 
     for warning in warnings:
         logger.warning(warning)
@@ -851,7 +851,7 @@ def typecheck(
 ) -> None:
     """Type-check the generated client code using TypeScript.
 
-    Compiles all .pyx files, then runs ``tsc --noEmit`` against the
+    Compiles all .pyxl files, then runs ``tsc --noEmit`` against the
     generated JSX in ``.pyxle-build/client/``.
     """
 
@@ -1103,9 +1103,9 @@ def routes(
     logger.success(f"{total} route(s) found")
 
 
-@app.command(name="compile", help="Compile a single .pyx file (developer utility).", hidden=True)
+@app.command(name="compile", help="Compile a single .pyxl file (developer utility).", hidden=True)
 def compile_command(
-    source: Path = typer.Argument(..., help="Path to the .pyx file to compile."),
+    source: Path = typer.Argument(..., help="Path to the .pyxl file to compile."),
     build_root: Path = typer.Option(
         Path(".pyxle-build"),
         "--build-root",

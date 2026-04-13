@@ -51,7 +51,7 @@ async def test_devserver_start_configures_uvicorn_and_watcher(anyio_backend, mon
 
     def fake_build_once(config: DevServerSettings, *, force_rebuild: bool = False) -> BuildSummary:
         build_calls.append({"settings": config, "force": force_rebuild})
-        return BuildSummary(compiled_pages=["pages/index.pyx"], copied_api_modules=["api/pulse.py"], removed=[])
+        return BuildSummary(compiled_pages=["pages/index.pyxl"], copied_api_modules=["api/pulse.py"], removed=[])
 
     monkeypatch.setattr("pyxle.devserver.build_once", fake_build_once)
     monkeypatch.setattr(
@@ -161,7 +161,7 @@ async def test_devserver_start_builds_routes_and_creates_app(anyio_backend, monk
         """from starlette.responses import JSONResponse\n\nasync def endpoint(request):\n    return JSONResponse({\"message\": \"Hello\"})\n""",
         encoding="utf-8",
     )
-    (settings.pages_dir / "index.pyx").write_text(
+    (settings.pages_dir / "index.pyxl").write_text(
         """\n\n@server\nasync def load_home(request):\n    return {\"message\": \"hi\"}\n\n# --- JavaScript/PSX (Client + Server) ---\n\nimport React from 'react';\n\nexport default function Home({ data }) {\n    return <div>{data.message}</div>;\n}\n""",
         encoding="utf-8",
     )
@@ -422,7 +422,7 @@ async def test_maybe_schedule_reload_dispatches(monkeypatch) -> None:
         async def notify_reload(self, *, changed_paths: list[str]) -> None:
             captured.append(changed_paths)
 
-    summary = BuildSummary(compiled_pages=["pages/index.pyx"], copied_api_modules=[], removed=[])
+    summary = BuildSummary(compiled_pages=["pages/index.pyxl"], copied_api_modules=[], removed=[])
     stats = WatcherStatistics(elapsed_seconds=0.01, summary=summary, error=None, changed_paths=[])
 
     monkeypatch.setattr(
@@ -433,18 +433,18 @@ async def test_maybe_schedule_reload_dispatches(monkeypatch) -> None:
     overlay = StubOverlay()
     assert _maybe_schedule_reload(overlay, loop, stats) is True
     await asyncio.sleep(0)
-    assert captured == [["pages/index.pyx"]]
+    assert captured == [["pages/index.pyxl"]]
 
 
 async def test_maybe_schedule_reload_handles_guard_paths(monkeypatch) -> None:
     loop = asyncio.get_running_loop()
 
-    summary_with_change = BuildSummary(compiled_pages=["pages/about.pyx"], copied_api_modules=[], removed=[])
+    summary_with_change = BuildSummary(compiled_pages=["pages/about.pyxl"], copied_api_modules=[], removed=[])
     stats_with_change = WatcherStatistics(
         elapsed_seconds=0.01,
         summary=summary_with_change,
         error=None,
-        changed_paths=[Path("pages/about.pyx")],
+        changed_paths=[Path("pages/about.pyxl")],
     )
 
     summary_empty = BuildSummary()
@@ -479,7 +479,7 @@ async def test_maybe_schedule_reload_handles_runtime_error(monkeypatch) -> None:
         async def notify_reload(self, *, changed_paths: list[str]) -> None:
             pass
 
-    summary = BuildSummary(compiled_pages=["pages/index.pyx"], copied_api_modules=[], removed=[])
+    summary = BuildSummary(compiled_pages=["pages/index.pyxl"], copied_api_modules=[], removed=[])
     stats = WatcherStatistics(elapsed_seconds=0.01, summary=summary, error=None, changed_paths=[])
 
     def raise_runtime(coro, loop):

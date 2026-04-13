@@ -123,7 +123,9 @@ async def test_vite_proxy_streams_assets(settings: DevServerSettings) -> None:
     assert client.requests[0]["params"] == [("v", "1")]
     assert "content-type" in starlette_response.headers
     assert "connection" not in starlette_response.headers
-    assert "host" not in client.requests[0]["headers"]
+    # Host header is now explicitly set to the upstream Vite server address
+    # rather than forwarding the client's original Host header.
+    assert client.requests[0]["headers"]["host"] == "127.0.0.1:5173"
     assert len(client.requests) == 1
 
 

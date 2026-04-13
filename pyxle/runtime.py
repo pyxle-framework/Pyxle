@@ -59,9 +59,9 @@ class ActionError(Exception):
 class LoaderError(Exception):
     """Raise from a ``@server`` loader to trigger the nearest error boundary.
 
-    When raised, the framework renders the closest ``error.pyx`` page up the
+    When raised, the framework renders the closest ``error.pyxl`` page up the
     directory tree from the current route, passing the error context as props.
-    If no ``error.pyx`` is found, the default error document is used.
+    If no ``error.pyxl`` is found, the default error document is used.
 
     The ``message`` is visible in the rendered error page. ``status_code``
     controls the HTTP response status (default 500). ``data`` carries any

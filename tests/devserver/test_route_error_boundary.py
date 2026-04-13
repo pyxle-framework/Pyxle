@@ -38,11 +38,11 @@ def _page_entry(
 
 
 class TestRouteTableErrorBoundaryFiltering:
-    def test_error_pyx_excluded_from_pages(self):
+    def test_error_pyxl_excluded_from_pages(self):
         registry = MetadataRegistry(
             pages=[
-                _page_entry("index.pyx", "/"),
-                _page_entry("error.pyx", "/error"),
+                _page_entry("index.pyxl", "/"),
+                _page_entry("error.pyxl", "/error"),
             ],
             apis=[],
         )
@@ -52,11 +52,11 @@ class TestRouteTableErrorBoundaryFiltering:
         assert "/" in page_paths
         assert "/error" not in page_paths
 
-    def test_not_found_pyx_excluded_from_pages(self):
+    def test_not_found_pyxl_excluded_from_pages(self):
         registry = MetadataRegistry(
             pages=[
-                _page_entry("index.pyx", "/"),
-                _page_entry("not-found.pyx", "/not-found"),
+                _page_entry("index.pyxl", "/"),
+                _page_entry("not-found.pyxl", "/not-found"),
             ],
             apis=[],
         )
@@ -69,10 +69,10 @@ class TestRouteTableErrorBoundaryFiltering:
     def test_nested_error_pages_excluded(self):
         registry = MetadataRegistry(
             pages=[
-                _page_entry("index.pyx", "/"),
-                _page_entry("dashboard/index.pyx", "/dashboard"),
-                _page_entry("dashboard/error.pyx", "/dashboard/error"),
-                _page_entry("dashboard/not-found.pyx", "/dashboard/not-found"),
+                _page_entry("index.pyxl", "/"),
+                _page_entry("dashboard/index.pyxl", "/dashboard"),
+                _page_entry("dashboard/error.pyxl", "/dashboard/error"),
+                _page_entry("dashboard/not-found.pyxl", "/dashboard/not-found"),
             ],
             apis=[],
         )
@@ -87,10 +87,10 @@ class TestRouteTableErrorBoundaryFiltering:
     def test_error_pages_appear_in_error_boundary_pages(self):
         registry = MetadataRegistry(
             pages=[
-                _page_entry("index.pyx", "/"),
-                _page_entry("error.pyx", "/error"),
-                _page_entry("not-found.pyx", "/not-found"),
-                _page_entry("dashboard/error.pyx", "/dashboard/error"),
+                _page_entry("index.pyxl", "/"),
+                _page_entry("error.pyxl", "/error"),
+                _page_entry("not-found.pyxl", "/not-found"),
+                _page_entry("dashboard/error.pyxl", "/dashboard/error"),
             ],
             apis=[],
         )
@@ -99,16 +99,16 @@ class TestRouteTableErrorBoundaryFiltering:
         boundary_sources = [
             p.source_relative_path.as_posix() for p in table.error_boundary_pages
         ]
-        assert "error.pyx" in boundary_sources
-        assert "not-found.pyx" in boundary_sources
-        assert "dashboard/error.pyx" in boundary_sources
+        assert "error.pyxl" in boundary_sources
+        assert "not-found.pyxl" in boundary_sources
+        assert "dashboard/error.pyxl" in boundary_sources
 
     def test_actions_from_error_pages_excluded(self):
-        """@action functions in error.pyx should not be routed."""
+        """@action functions in error.pyxl should not be routed."""
         registry = MetadataRegistry(
             pages=[
-                _page_entry("index.pyx", "/", actions=({"name": "submit"},)),
-                _page_entry("error.pyx", "/error", actions=({"name": "report_error"},)),
+                _page_entry("index.pyxl", "/", actions=({"name": "submit"},)),
+                _page_entry("error.pyxl", "/error", actions=({"name": "report_error"},)),
             ],
             apis=[],
         )
@@ -129,8 +129,8 @@ class TestRouteTableErrorBoundaryFiltering:
         """Existing find_page/find_api/find_action still work correctly."""
         registry = MetadataRegistry(
             pages=[
-                _page_entry("index.pyx", "/"),
-                _page_entry("error.pyx", "/error"),
+                _page_entry("index.pyxl", "/"),
+                _page_entry("error.pyxl", "/error"),
             ],
             apis=[],
         )

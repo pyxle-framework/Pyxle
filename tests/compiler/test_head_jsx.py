@@ -222,7 +222,7 @@ class TestHeadJSXIntegration:
 
         pages_dir = tmp_path / "pages"
         pages_dir.mkdir()
-        source_file = pages_dir / "test.pyx"
+        source_file = pages_dir / "test.pyxl"
         source_file.write_text(
             """
 @server
@@ -263,7 +263,7 @@ export default function Page({ data }) {
 
         pages_dir = tmp_path / "pages"
         pages_dir.mkdir()
-        source_file = pages_dir / "test.pyx"
+        source_file = pages_dir / "test.pyxl"
         source_file.write_text(
             """
 HEAD = '<meta name="viewport" content="width=device-width" />'

@@ -28,7 +28,7 @@ def _make_page_entry(
     return PageRegistryEntry(
         route_path=route_path,
         alternate_route_paths=(),
-        source_relative_path=Path("pages/index.pyx"),
+        source_relative_path=Path("pages/index.pyxl"),
         source_absolute_path=stub,
         server_module_path=server_module_path,
         client_module_path=stub,
@@ -139,8 +139,8 @@ def test_page_route_has_actions_true(tmp_path: Path) -> None:
 
     route = PageRoute(
         path="/settings",
-        source_relative_path=Path("pages/settings.pyx"),
-        source_absolute_path=tmp_path / "pages/settings.pyx",
+        source_relative_path=Path("pages/settings.pyxl"),
+        source_absolute_path=tmp_path / "pages/settings.pyxl",
         server_module_path=tmp_path / "server.py",
         client_module_path=tmp_path / "client.jsx",
         metadata_path=tmp_path / "meta.json",
@@ -162,8 +162,8 @@ def test_page_route_has_actions_false(tmp_path: Path) -> None:
 
     route = PageRoute(
         path="/about",
-        source_relative_path=Path("pages/about.pyx"),
-        source_absolute_path=tmp_path / "pages/about.pyx",
+        source_relative_path=Path("pages/about.pyxl"),
+        source_absolute_path=tmp_path / "pages/about.pyxl",
         server_module_path=tmp_path / "server.py",
         client_module_path=tmp_path / "client.jsx",
         metadata_path=tmp_path / "meta.json",
@@ -298,7 +298,11 @@ def test_action_dispatch_missing_action(tmp_path: Path) -> None:
 
 
 def test_action_dispatch_untagged_function_rejected(tmp_path: Path) -> None:
-    """A function without @action must not be callable as an action."""
+    """A function without @action must not be callable as an action.
+
+    Returns 404 (not 400) to prevent attribute-existence enumeration
+    that could leak information about the module's internals (M-5).
+    """
     module_path = _write_module(
         tmp_path / "server" / "pages" / "untagged.py",
         """
@@ -323,7 +327,7 @@ def test_action_dispatch_untagged_function_rejected(tmp_path: Path) -> None:
 
     client = TestClient(app, raise_server_exceptions=False)
     response = client.post("/api/__actions/untagged/save", json={})
-    assert response.status_code == 400
+    assert response.status_code == 404
     assert response.json()["ok"] is False
 
 
@@ -465,7 +469,7 @@ def _make_page_entry_with_alternates(
     return PageRegistryEntry(
         route_path=route_path,
         alternate_route_paths=alternate_route_paths,
-        source_relative_path=Path("pages/docs/[[...slug]].pyx"),
+        source_relative_path=Path("pages/docs/[[...slug]].pyxl"),
         source_absolute_path=stub,
         server_module_path=server_module_path,
         client_module_path=stub,
@@ -610,7 +614,7 @@ def test_catchall_action_dispatch_missing_action(tmp_path: Path) -> None:
 
 
 def test_catchall_action_dispatch_untagged_rejected(tmp_path: Path) -> None:
-    """The catch-all handler must reject functions without @action."""
+    """The catch-all handler must reject functions without @action (M-5: 404)."""
     module_path = _write_module(
         tmp_path / "server" / "pages" / "docs3.py",
         """
@@ -638,7 +642,7 @@ def test_catchall_action_dispatch_untagged_rejected(tmp_path: Path) -> None:
     resp = client.post(
         "/api/__actions/docs/slug/not_an_action", json={},
     )
-    assert resp.status_code == 400
+    assert resp.status_code == 404
     assert resp.json()["ok"] is False
 
 

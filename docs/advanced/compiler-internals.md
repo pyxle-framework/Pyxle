@@ -1,12 +1,12 @@
 # Compiler Internals
 
-The Pyxle compiler transforms `.pyx` files into separate Python and JSX artifacts. This document explains how the compilation process works.
+The Pyxle compiler transforms `.pyxl` files into separate Python and JSX artifacts. This document explains how the compilation process works.
 
 ## Compilation overview
 
 When you run `pyxle dev` or `pyxle build`, the compiler:
 
-1. Scans the `pages/` directory for `.pyx` files
+1. Scans the `pages/` directory for `.pyxl` files
 2. Parses each file to separate Python from JSX
 3. Writes server-side Python modules to `.pyxle-build/server/`
 4. Writes client-side JSX modules to `.pyxle-build/client/`
@@ -63,7 +63,7 @@ The compiled Python module contains:
 ```python
 from pyxle.runtime import server, action
 
-# Original imports from the .pyx file
+# Original imports from the .pyxl file
 from datetime import datetime
 
 # Loader function
@@ -135,7 +135,7 @@ The compiler generates `.pyxle-build/vite.config.js` that:
 During `pyxle dev`, the file watcher triggers recompilation only for changed files:
 
 1. The watcher detects a file change in `pages/`
-2. Only the changed `.pyx` file is recompiled
+2. Only the changed `.pyxl` file is recompiled
 3. The server module is re-imported (with module cache invalidation)
 4. Vite's HMR picks up the client-side changes automatically
 

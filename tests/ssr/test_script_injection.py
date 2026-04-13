@@ -134,8 +134,8 @@ class TestDocumentShellWithScripts:
         
         page = PageRoute(
             path="/test",
-            source_relative_path=tmp_path / "test.pyx",
-            source_absolute_path=tmp_path / "pages/test.pyx",
+            source_relative_path=tmp_path / "test.pyxl",
+            source_absolute_path=tmp_path / "pages/test.pyxl",
             server_module_path=tmp_path / ".pyxle-build/server/pages/test.py",
             client_module_path=tmp_path / ".pyxle-build/client/pages/test.jsx",
             metadata_path=tmp_path / ".pyxle-build/metadata/pages/test.json",
@@ -175,8 +175,8 @@ class TestDocumentShellWithScripts:
         
         page = PageRoute(
             path="/test",
-            source_relative_path=tmp_path / "test.pyx",
-            source_absolute_path=tmp_path / "pages/test.pyx",
+            source_relative_path=tmp_path / "test.pyxl",
+            source_absolute_path=tmp_path / "pages/test.pyxl",
             server_module_path=tmp_path / ".pyxle-build/server/pages/test.py",
             client_module_path=tmp_path / ".pyxle-build/client/pages/test.jsx",
             metadata_path=tmp_path / ".pyxle-build/metadata/pages/test.json",

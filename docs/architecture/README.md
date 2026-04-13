@@ -9,24 +9,24 @@ If the rest of the docs answer *what does Pyxle do?*, this section answers
 
 You don't need to read these in order. Pick whichever subsystem you're curious
 about and start there. Each page is self-contained, links liberally back to
-the source code, and uses real examples from real `.pyx` files.
+the source code, and uses real examples from real `.pyxl` files.
 
 ---
 
 ## A 30-second mental model
 
-A Pyxle application is, fundamentally, a directory of `.pyx` files.
+A Pyxle application is, fundamentally, a directory of `.pyxl` files.
 
 ```
 my-app/
 └── pages/
-    ├── index.pyx          → /
-    ├── about.pyx          → /about
+    ├── index.pyxl          → /
+    ├── about.pyxl          → /about
     └── posts/
-        └── [id].pyx       → /posts/:id
+        └── [id].pyxl       → /posts/:id
 ```
 
-Each `.pyx` file is one *page*. It contains **Python** (your loaders, actions,
+Each `.pyxl` file is one *page*. It contains **Python** (your loaders, actions,
 and head metadata) **and** **JSX** (your React component) — colocated in a
 single file because they describe the same thing: one route.
 
@@ -34,7 +34,7 @@ When you run `pyxle dev`, six pieces of code spring into action:
 
 ```
                 ┌──────────┐
-                │  .pyx    │  ← you write this
+                │  .pyxl    │  ← you write this
                 │  files   │
                 └────┬─────┘
                      │
@@ -82,7 +82,7 @@ those six pieces.
 
 ### The core compiler
 
-- **[The .pyx file format](pyx-files.md)** — Why Pyxle invented a new file
+- **[The .pyxl file format](pyxl-files.md)** — Why Pyxle invented a new file
   extension and what's actually in one. The "two languages, one file" idea.
 
 - **[The parser](parser.md)** — How Pyxle splits Python from JSX without any
@@ -98,7 +98,7 @@ those six pieces.
 
 - **[Routing](routing.md)** — File-based routing, dynamic segments
   (`[id]`), catch-all routes (`[...slug]`), optional catch-alls
-  (`[[...slug]]`), route groups (`(auth)`), and `index.pyx` collapsing.
+  (`[[...slug]]`), route groups (`(auth)`), and `index.pyxl` collapsing.
 
 - **[The dev server](dev-server.md)** — Starlette + Vite + the file watcher
   + the incremental builder + the WebSocket error overlay. The whole `pyxle
@@ -137,7 +137,7 @@ those six pieces.
   context for readers coming from other frameworks.
 
 - **Examples** are real, runnable, copy-paste-ready code — never pseudocode.
-  Every snippet either is, or could be, a real `.pyx` file.
+  Every snippet either is, or could be, a real `.pyxl` file.
 
 - **"How it works under the hood"** sections drop into the actual algorithms
   and data structures. These are the "advanced" parts — feel free to skim or

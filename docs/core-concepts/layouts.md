@@ -4,23 +4,23 @@ Layouts wrap pages in shared UI -- navigation bars, sidebars, footers, and other
 
 ## Creating a layout
 
-Add a `layout.pyx` file to any directory inside `pages/`. It wraps all pages in that directory and its subdirectories:
+Add a `layout.pyxl` file to any directory inside `pages/`. It wraps all pages in that directory and its subdirectories:
 
 ```
 pages/
-  layout.pyx         # Root layout -- wraps ALL pages
-  index.pyx
-  about.pyx
+  layout.pyxl         # Root layout -- wraps ALL pages
+  index.pyxl
+  about.pyxl
   dashboard/
-    layout.pyx       # Dashboard layout -- wraps only dashboard pages
-    index.pyx
-    settings.pyx
+    layout.pyxl       # Dashboard layout -- wraps only dashboard pages
+    index.pyxl
+    settings.pyxl
 ```
 
 A layout is a React component that receives `children`:
 
 ```jsx
-// pages/layout.pyx
+// pages/layout.pyxl
 export default function RootLayout({ children }) {
   return (
     <div className="min-h-screen">
@@ -40,7 +40,7 @@ export default function RootLayout({ children }) {
 Layouts can export a `slots` object and a `createSlots` function for passing additional content from pages:
 
 ```jsx
-// pages/layout.pyx
+// pages/layout.pyxl
 export const slots = {};
 export const createSlots = () => slots;
 
@@ -51,7 +51,7 @@ export default function RootLayout({ children }) {
 
 ## Nesting layouts
 
-Layouts nest automatically. If both `pages/layout.pyx` and `pages/dashboard/layout.pyx` exist, a page at `pages/dashboard/settings.pyx` is wrapped by both:
+Layouts nest automatically. If both `pages/layout.pyxl` and `pages/dashboard/layout.pyxl` exist, a page at `pages/dashboard/settings.pyxl` is wrapped by both:
 
 ```
 RootLayout
@@ -63,22 +63,22 @@ Inner layouts are rendered inside outer layouts. The root layout is always the o
 
 ## Templates
 
-A `template.pyx` file works like a layout but **resets component state on every navigation**. Use templates when you want a fresh React component tree for each page in the group:
+A `template.pyxl` file works like a layout but **resets component state on every navigation**. Use templates when you want a fresh React component tree for each page in the group:
 
 ```
 pages/
-  layout.pyx           # Persists across navigation
+  layout.pyxl           # Persists across navigation
   auth/
-    template.pyx       # Resets state on navigation between auth pages
-    login.pyx
-    register.pyx
+    template.pyxl       # Resets state on navigation between auth pages
+    login.pyxl
+    register.pyxl
 ```
 
 Templates are useful for authentication flows, wizards, or any section where you want form state and scroll position to reset when moving between pages.
 
 ## Layout vs template
 
-| Behaviour | `layout.pyx` | `template.pyx` |
+| Behaviour | `layout.pyxl` | `template.pyxl` |
 |-----------|-------------|----------------|
 | Wraps child pages | Yes | Yes |
 | Preserves state on navigation | Yes | No (remounts) |
@@ -93,7 +93,7 @@ Layout files typically contain only JSX -- no `@server` loader or `@action` func
 
 When Pyxle compiles your pages, it:
 
-1. Walks up from each page to the root, collecting `layout.pyx` and `template.pyx` files
+1. Walks up from each page to the root, collecting `layout.pyxl` and `template.pyxl` files
 2. Generates a composed wrapper module that nests them in the correct order
 3. At render time, the page component is passed as `children` to the innermost layout
 

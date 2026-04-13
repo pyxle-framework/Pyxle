@@ -9,7 +9,7 @@ from typing import Any, Dict
 
 @dataclass(frozen=True)
 class ScriptDeclaration:
-    """Represents a <Script /> element declaration in a .pyx file."""
+    """Represents a <Script /> element declaration in a .pyxl file."""
 
     src: str
     strategy: str = "afterInteractive"  # beforeInteractive, afterInteractive, lazyOnload
@@ -31,7 +31,7 @@ class ScriptDeclaration:
 
 @dataclass(frozen=True)
 class ImageDeclaration:
-    """Represents an <Image /> element declaration in a .pyx file."""
+    """Represents an <Image /> element declaration in a .pyxl file."""
 
     src: str
     width: int | None = None
@@ -106,7 +106,7 @@ class PageMetadata:
 
 @dataclass(frozen=True)
 class CompilationResult:
-    """Represents the outcome of compiling a `.pyx` file."""
+    """Represents the outcome of compiling a `.pyxl` file."""
 
     source_path: Path
     python_code: str
