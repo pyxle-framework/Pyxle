@@ -364,6 +364,43 @@ async def _execute_loader(
     return payload, status_code, module
 
 
+async def _execute_layout_loaders(
+    *,
+    settings: DevServerSettings,
+    page: PageRoute,
+    request: Request,
+) -> dict[str, Any] | None:
+    """Execute ``@server`` loaders declared in ancestor layout/template files.
+
+    Returns a dict of loader results (one entry per layout that has a loader),
+    or ``None`` if no layout declares a loader.
+    """
+    from pyxle.devserver.registry import find_layout_loaders
+
+    layout_loader_infos = find_layout_loaders(settings, page.source_relative_path)
+    if not layout_loader_infos:
+        return None
+
+    layout_data: dict[str, Any] = {}
+    for info in layout_loader_infos:
+        module = _import_server_module(info.module_key, info.server_module_path, debug=settings.debug)
+        loader_fn = getattr(module, info.loader_name, None)
+        if loader_fn is None:
+            continue
+
+        result = loader_fn(request)
+        if hasattr(result, "__await__"):
+            result = await result
+
+        # Layout loaders return a plain dict (no status code).
+        if isinstance(result, tuple) and result:
+            result = result[0]
+        if isinstance(result, Mapping):
+            layout_data.update(result)
+
+    return layout_data or None
+
+
 def _resolve_head_elements(
     page: PageRoute,
     module,
@@ -404,8 +441,14 @@ def _normalize_loader_result(result: Any, page: PageRoute) -> Tuple[dict[str, An
     return dict(payload), status_code
 
 
-def _compose_component_props(loader_payload: dict[str, Any]) -> dict[str, Any]:
-    return {"data": loader_payload}
+def _compose_component_props(
+    loader_payload: dict[str, Any],
+    layout_data: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    props: dict[str, Any] = {"data": loader_payload}
+    if layout_data:
+        props["layoutData"] = layout_data
+    return props
 
 
 async def _create_page_artifacts(
@@ -434,14 +477,21 @@ async def _create_page_artifacts(
         loader_breadcrumb["detail"] = f"Returned {len(loader_props)} key(s) with status {status_code}"
 
     head_elements = _resolve_head_elements(page, module, loader_props, debug=settings.debug)
-    
+
     # Merge HEAD variable with JSX Head blocks and layout head blocks
-    from pyxle.devserver.registry import find_layout_head_jsx_blocks
+    from pyxle.devserver.registry import find_layout_head_jsx_blocks, find_layout_loaders
     from pyxle.ssr.head_merger import merge_head_elements
-    
+
     layout_head_jsx_blocks = find_layout_head_jsx_blocks(settings, page.source_relative_path)
-    
-    component_props = _compose_component_props(loader_props)
+
+    # Execute layout loaders (if any layout has a @server decorator)
+    layout_data = await _execute_layout_loaders(
+        settings=settings,
+        page=page,
+        request=request,
+    )
+
+    component_props = _compose_component_props(loader_props, layout_data)
     render_result = await renderer.render(page.client_module_path, component_props)
     body_html = render_result.html
     inline_styles = render_result.inline_styles

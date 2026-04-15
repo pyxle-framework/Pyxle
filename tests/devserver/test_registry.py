@@ -278,3 +278,68 @@ def test_find_layout_head_jsx_blocks_layout_hierarchy(project: DevServerSettings
     assert "root" in all_blocks
     assert "posts" in all_blocks
 
+
+# ---------------------------------------------------------------------------
+# find_layout_loaders
+# ---------------------------------------------------------------------------
+
+
+def test_find_layout_loaders_no_layout(project: DevServerSettings) -> None:
+    """Returns empty tuple when no layout file exists."""
+    from pyxle.devserver.registry import find_layout_loaders
+
+    build_once(project)
+    loaders = find_layout_loaders(project, Path("index.pyxl"))
+    assert loaders == ()
+
+
+def test_find_layout_loaders_layout_without_loader(project: DevServerSettings) -> None:
+    """Layout file with no @server decorator yields no loader info."""
+    from pyxle.devserver.registry import find_layout_loaders
+
+    write_file(
+        project.pages_dir / "layout.pyxl",
+        "import React from 'react';\n\nexport default function Layout({ children }) {\n    return <div>{children}</div>;\n}\n",
+    )
+
+    build_once(project)
+    loaders = find_layout_loaders(project, Path("index.pyxl"))
+    assert loaders == ()
+
+
+def test_find_layout_loaders_layout_with_loader(project: DevServerSettings) -> None:
+    """Layout file with @server decorator is discovered."""
+    from pyxle.devserver.registry import find_layout_loaders
+
+    write_file(
+        project.pages_dir / "layout.pyxl",
+        "@server\nasync def load_layout(request):\n    return {'app': 'test'}\n\nimport React from 'react';\n\nexport default function Layout({ children }) {\n    return <div>{children}</div>;\n}\n",
+    )
+
+    build_once(project)
+    loaders = find_layout_loaders(project, Path("index.pyxl"))
+    assert len(loaders) == 1
+    assert loaders[0].loader_name == "load_layout"
+    assert loaders[0].server_module_path.exists()
+
+
+def test_find_layout_loaders_nested_hierarchy(project: DevServerSettings) -> None:
+    """Both root and nested layout loaders are discovered in order."""
+    from pyxle.devserver.registry import find_layout_loaders
+
+    write_file(
+        project.pages_dir / "layout.pyxl",
+        "@server\nasync def load_root(request):\n    return {'level': 'root'}\n\nimport React from 'react';\n\nexport default function RootLayout({ children }) {\n    return <html>{children}</html>;\n}\n",
+    )
+    write_file(
+        project.pages_dir / "posts" / "layout.pyxl",
+        "@server\nasync def load_posts(request):\n    return {'level': 'posts'}\n\nimport React from 'react';\n\nexport default function PostsLayout({ children }) {\n    return <section>{children}</section>;\n}\n",
+    )
+
+    build_once(project)
+    loaders = find_layout_loaders(project, Path("posts/[id].pyxl"))
+    assert len(loaders) == 2
+    # Closest layout first
+    assert loaders[0].loader_name == "load_posts"
+    assert loaders[1].loader_name == "load_root"
+

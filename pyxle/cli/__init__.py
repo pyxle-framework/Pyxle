@@ -661,7 +661,8 @@ def serve(
         public_dir = resolved_dist / "public"
         if not public_dir.exists():
             logger.warning(
-                f"Public assets directory '{public_dir}' does not exist; falling back to '{settings.public_dir}'."
+                f"Public assets directory '{public_dir}' does not exist — did you run 'pyxle build' first? "
+                f"Falling back to source directory '{settings.public_dir}'."
             )
             public_static_dir = settings.public_dir
         else:

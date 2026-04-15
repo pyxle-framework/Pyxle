@@ -379,3 +379,62 @@ def find_layout_head_jsx_blocks(
                     layout_head_blocks.extend(metadata.head_elements)
     
     return tuple(layout_head_blocks)
+
+
+@dataclass(frozen=True, slots=True)
+class LayoutLoaderInfo:
+    """Metadata needed to execute a layout's ``@server`` loader."""
+
+    relative_path: Path
+    server_module_path: Path
+    module_key: str
+    loader_name: str
+
+
+def find_layout_loaders(
+    settings: DevServerSettings,
+    page_relative_path: Path,
+) -> tuple[LayoutLoaderInfo, ...]:
+    """Discover layout/template files with ``@server`` loaders that wrap *page_relative_path*.
+
+    Walks ancestor directories from the page's location (closest first, root last)
+    and returns a :class:`LayoutLoaderInfo` for each layout or template whose
+    compiled metadata declares a loader.  The order matches the wrapping order
+    used by :func:`find_layout_head_jsx_blocks`.
+    """
+
+    parts = list(page_relative_path.parent.parts)
+    ancestors: List[Path] = []
+
+    if page_relative_path.parent.name:
+        ancestors.append(page_relative_path.parent)
+
+    for index in range(len(parts) - 1, 0, -1):
+        ancestors.append(Path(*parts[:index]))
+
+    ancestors.append(Path("."))
+
+    loaders: List[LayoutLoaderInfo] = []
+
+    for ancestor_dir in ancestors:
+        for filename in ("layout.pyxl", "template.pyxl"):
+            relative = ancestor_dir / filename if ancestor_dir != Path(".") else Path(filename)
+            metadata_path = settings.metadata_build_dir / "pages" / relative.with_suffix(".json")
+            if ancestor_dir == Path("."):
+                metadata_path = settings.metadata_build_dir / "pages" / Path(filename).with_suffix(".json")
+
+            metadata = _load_page_metadata(metadata_path)
+            if metadata is None or not metadata.loader_name:
+                continue
+
+            server_module = settings.server_build_dir / "pages" / relative.with_suffix(".py")
+            module_key = relative.with_suffix("").as_posix().replace("/", ".")
+
+            loaders.append(LayoutLoaderInfo(
+                relative_path=relative,
+                server_module_path=server_module,
+                module_key=module_key,
+                loader_name=metadata.loader_name,
+            ))
+
+    return tuple(loaders)
